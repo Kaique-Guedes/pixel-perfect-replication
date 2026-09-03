@@ -60,7 +60,7 @@ function AppLayout() {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" className="print:hidden">
         <SidebarHeader className="p-4">
           <Logo size="sm" variant="sidebar" className="group-data-[collapsible=icon]:[&>span:last-child]:hidden" />
         </SidebarHeader>
@@ -105,7 +105,7 @@ function AppLayout() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center gap-2 border-b px-4">
+        <header className="flex h-14 items-center gap-2 border-b px-4 print:hidden">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
           <span className="text-sm text-muted-foreground">{empresa?.nome}</span>

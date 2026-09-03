@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { endOfMonth, format, isSameDay, parseISO, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Users } from "lucide-react";
+import { CalendarPlus, MapPin, Receipt, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatHora } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -120,6 +120,14 @@ function AgendaPage() {
                       {e.clientes?.nome && <span>{e.clientes.nome}</span>}
                     </p>
                   </div>
+                  <Link
+                    to="/app/agenda/$eventoId"
+                    params={{ eventoId: e.id }}
+                    onClick={(ev) => ev.stopPropagation()}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <Receipt className="size-3.5" /> Orçamento
+                  </Link>
                   <EventoStatusBadge status={e.status} />
                 </li>
               ))}

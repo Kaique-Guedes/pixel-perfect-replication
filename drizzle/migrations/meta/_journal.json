@@ -15,6 +15,13 @@
       "when": 1788400000000,
       "tag": "0001_fase2_ingredientes_cardapio",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788410000000,
+      "tag": "0002_fase3_orcamento_itens_avulsos",
+      "breakpoints": true
     }
   ]
 }

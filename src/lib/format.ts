@@ -95,3 +95,8 @@ export function corMargem(margem: number, margemAlvo: number, margemMinima: numb
   if (pct >= margemMinima) return "warning";
   return "destructive";
 }
+
+export const TIPO_ITEM_AVULSO: Record<Enums<"tipo_item_avulso">, string> = {
+  fixo: "Valor fixo",
+  por_convidado: "Por convidado",
+};

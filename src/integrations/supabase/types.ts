@@ -376,6 +376,51 @@ export type Database = {
           },
         ]
       }
+      orcamento_itens_avulsos: {
+        Row: {
+          created_at: string
+          descricao: string
+          empresa_id: string
+          evento_id: string
+          id: string
+          tipo: Database["public"]["Enums"]["tipo_item_avulso"]
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          empresa_id: string
+          evento_id: string
+          id?: string
+          tipo?: Database["public"]["Enums"]["tipo_item_avulso"]
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          empresa_id?: string
+          evento_id?: string
+          id?: string
+          tipo?: Database["public"]["Enums"]["tipo_item_avulso"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_itens_avulsos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_itens_avulsos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           created_at: string
@@ -484,6 +529,7 @@ export type Database = {
         | "confirmado"
         | "realizado"
         | "cancelado"
+      tipo_item_avulso: "fixo" | "por_convidado"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
       unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
     }
@@ -640,6 +686,7 @@ export const Constants = {
         "realizado",
         "cancelado",
       ],
+      tipo_item_avulso: ["fixo", "por_convidado"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
       unidade_medida: ["kg", "g", "litro", "ml", "unidade"],
     },
