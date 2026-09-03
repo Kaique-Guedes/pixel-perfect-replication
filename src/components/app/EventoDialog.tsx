@@ -32,11 +32,14 @@ export function EventoDialog({
   onOpenChange,
   evento,
   defaults,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   evento?: Evento | null;
   defaults?: Partial<typeof empty>;
+  /** Chamado após salvar com sucesso — id do evento e se foi uma criação (não edição). */
+  onSaved?: (info: { id: string; isNew: boolean }) => void;
 }) {
   const { empresa } = useAuth();
   const qc = useQueryClient();
@@ -103,15 +106,17 @@ export function EventoDialog({
         status: form.status,
         observacoes: form.observacoes.trim() || null,
       };
-      const { error } = evento
-        ? await supabase.from("eventos").update(payload).eq("id", evento.id)
-        : await supabase.from("eventos").insert(payload);
+      const { data: salvo, error } = evento
+        ? await supabase.from("eventos").update(payload).eq("id", evento.id).select("id").single()
+        : await supabase.from("eventos").insert(payload).select("id").single();
       if (error) throw error;
+      return salvo.id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ["eventos"] });
       toast.success(evento ? "Evento atualizado." : "Evento criado.");
       onOpenChange(false);
+      onSaved?.({ id, isNew: !evento });
     },
     onError: (e: Error) => {
       if (e.message.includes("OVERBOOKING")) {
@@ -147,8 +152,8 @@ export function EventoDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>{evento ? "Editar evento" : "Novo evento"}</DialogTitle>
-            <DialogDescription>Eventos confirmados ou com contrato assinado bloqueiam a agenda.</DialogDescription>
+            <DialogTitle>{evento ? "Editar evento" : "Novo evento / orçamento"}</DialogTitle>
+            <DialogDescription>Todo evento nasce como orçamento — depois de salvar, você monta o cardápio e o valor na tela do evento. Eventos confirmados ou com contrato assinado bloqueiam a agenda.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">

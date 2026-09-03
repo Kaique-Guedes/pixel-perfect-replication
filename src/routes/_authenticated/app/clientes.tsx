@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, UserPlus } from "lucide-react";
+import { Receipt, Search, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { formatDate, CLIENTE_STATUS } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
 import { ClienteStatusBadge } from "@/components/app/StatusBadge";
 import { ClienteDialog } from "@/components/app/ClienteDialog";
+import { EventoDialog } from "@/components/app/EventoDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,10 +22,13 @@ export const Route = createFileRoute("/_authenticated/app/clientes")({
 });
 
 function ClientesPage() {
+  const navigate = useNavigate();
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<Enums<"cliente_status"> | "_">("_");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selecionado, setSelecionado] = useState<Cliente | null>(null);
+  const [orcamentoDialogOpen, setOrcamentoDialogOpen] = useState(false);
+  const [clienteParaOrcamento, setClienteParaOrcamento] = useState<Cliente | null>(null);
 
   const { data: clientes = [], isLoading } = useQuery({
     queryKey: ["clientes"],
@@ -56,6 +60,11 @@ function ClientesPage() {
   const abrirEdicao = (c: Cliente) => {
     setSelecionado(c);
     setDialogOpen(true);
+  };
+
+  const abrirOrcamento = (c: Cliente) => {
+    setClienteParaOrcamento(c);
+    setOrcamentoDialogOpen(true);
   };
 
   return (
@@ -116,6 +125,7 @@ function ClientesPage() {
                 <TableHead>Origem</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Cadastrado em</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,6 +138,16 @@ function ClientesPage() {
                   <TableCell className="text-muted-foreground">{c.origem || "—"}</TableCell>
                   <TableCell><ClienteStatusBadge status={c.status} /></TableCell>
                   <TableCell className="text-right text-muted-foreground">{formatDate(c.created_at)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Novo orçamento para este cliente"
+                      onClick={(e) => { e.stopPropagation(); abrirOrcamento(c); }}
+                    >
+                      <Receipt className="size-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -136,6 +156,15 @@ function ClientesPage() {
       </div>
 
       <ClienteDialog open={dialogOpen} onOpenChange={setDialogOpen} cliente={selecionado} />
+
+      <EventoDialog
+        open={orcamentoDialogOpen}
+        onOpenChange={setOrcamentoDialogOpen}
+        defaults={clienteParaOrcamento ? { cliente_id: clienteParaOrcamento.id, titulo: `Orçamento — ${clienteParaOrcamento.nome}` } : undefined}
+        onSaved={({ id, isNew }) => {
+          if (isNew) void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
+        }}
+      />
     </>
   );
 }

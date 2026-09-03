@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { endOfMonth, format, isSameDay, parseISO, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/app/agenda")({
 });
 
 function AgendaPage() {
+  const navigate = useNavigate();
   const [mes, setMes] = useState(startOfMonth(new Date()));
   const [selecionado, setSelecionado] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -141,6 +142,9 @@ function AgendaPage() {
         onOpenChange={setDialogOpen}
         evento={eventoAtivo}
         defaults={{ data: format(selecionado, "yyyy-MM-dd") }}
+        onSaved={({ id, isNew }) => {
+          if (isNew) void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
+        }}
       />
     </>
   );
