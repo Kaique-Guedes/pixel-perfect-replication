@@ -100,3 +100,13 @@ export const TIPO_ITEM_AVULSO: Record<Enums<"tipo_item_avulso">, string> = {
   fixo: "Valor fixo",
   por_convidado: "Por convidado",
 };
+
+export const STATUS_PARCELA: Record<Enums<"status_parcela">, string> = {
+  pendente: "Pendente",
+  pago: "Pago",
+};
+
+/** "Atrasada" é sempre derivado (nunca armazenado): pendente + vencimento no passado. */
+export function parcelaAtrasada(parcela: { status: Enums<"status_parcela">; data_vencimento: string }) {
+  return parcela.status === "pendente" && parcela.data_vencimento < format(new Date(), "yyyy-MM-dd");
+}

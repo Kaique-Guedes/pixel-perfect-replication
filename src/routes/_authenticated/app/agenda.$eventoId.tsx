@@ -2,21 +2,24 @@ import { useMemo, useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, FileDown, Lock, Plus, Trash2, Unlock } from "lucide-react";
+import { ArrowLeft, AlertTriangle, FileDown, Lock, Plus, Trash2, Unlock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums } from "@/integrations/supabase/types";
 import {
   CATEGORIA_ITEM_CARDAPIO,
+  STATUS_PARCELA,
   TIPO_ITEM_AVULSO,
   calcularCustoItemCardapio,
   formatCurrency,
   formatDate,
   formatHora,
+  parcelaAtrasada,
 } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
-import { EventoStatusBadge } from "@/components/app/StatusBadge";
+import { EventoStatusBadge, badge } from "@/components/app/StatusBadge";
 import { MargemBadge } from "@/components/app/MargemBadge";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +41,8 @@ function EventoDetalhePage() {
     tipo: "fixo",
     valor: 0,
   });
+  const [parcela, setParcela] = useState({ descricao: "", valor: 0, data_vencimento: "" });
+  const [despesa, setDespesa] = useState({ descricao: "", fornecedor: "", valor: 0, data: new Date().toISOString().slice(0, 10) });
 
   const { data: evento, isLoading: carregandoEvento } = useQuery({
     queryKey: ["eventos", eventoId],
@@ -82,6 +87,24 @@ function EventoDetalhePage() {
     },
   });
 
+  const { data: parcelas = [] } = useQuery({
+    queryKey: ["parcelas", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("parcelas").select("*").eq("evento_id", eventoId).order("data_vencimento");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: despesas = [] } = useQuery({
+    queryKey: ["despesas", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("despesas").select("*").eq("evento_id", eventoId).order("data", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const editavel = evento?.status === "orcamento";
   const convidados = evento?.convidados_estimados ?? 0;
   const markup = empresa?.markup_padrao ?? 100;
@@ -105,13 +128,22 @@ function EventoDetalhePage() {
   const valorPorConvidado = convidados > 0 ? total / convidados : 0;
   const margemCardapio = subtotalCardapio > 0 ? (subtotalCardapio - custoCardapioTotal) / subtotalCardapio : 0;
 
+  const totalRecebido = parcelas.filter((p) => p.status === "pago").reduce((s, p) => s + p.valor, 0);
+  const totalAReceber = parcelas.filter((p) => p.status === "pendente").reduce((s, p) => s + p.valor, 0);
+  const parcelasAtrasadas = parcelas.filter(parcelaAtrasada);
+  const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0);
+  const margemRealizada = total - totalDespesas;
+
   const itensDisponiveis = catalogo.filter((c) => !itensCalculados.some((i) => i.id === c.id));
 
   const invalidarTudo = () => {
     void qc.invalidateQueries({ queryKey: ["evento-cardapio-itens", eventoId] });
     void qc.invalidateQueries({ queryKey: ["orcamento-itens-avulsos", eventoId] });
+    void qc.invalidateQueries({ queryKey: ["parcelas", eventoId] });
+    void qc.invalidateQueries({ queryKey: ["despesas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["eventos", eventoId] });
     void qc.invalidateQueries({ queryKey: ["eventos"] });
+    void qc.invalidateQueries({ queryKey: ["financeiro"] });
   };
 
   const erroTravado = (e: Error) => {
@@ -172,6 +204,73 @@ function EventoDetalhePage() {
     onError: erroTravado,
   });
 
+  const addParcela = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("parcelas").insert({
+        empresa_id: empresa!.id,
+        evento_id: eventoId,
+        descricao: parcela.descricao.trim(),
+        valor: Number(parcela.valor) || 0,
+        data_vencimento: parcela.data_vencimento,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setParcela({ descricao: "", valor: 0, data_vencimento: "" });
+      invalidarTudo();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const alternarPagamento = useMutation({
+    mutationFn: async (p: { id: string; pago: boolean }) => {
+      const { error } = await supabase
+        .from("parcelas")
+        .update(p.pago ? { status: "pago", data_pagamento: new Date().toISOString().slice(0, 10) } : { status: "pendente", data_pagamento: null })
+        .eq("id", p.id);
+      if (error) throw error;
+    },
+    onSuccess: invalidarTudo,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeParcela = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("parcelas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidarTudo,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const addDespesa = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("despesas").insert({
+        empresa_id: empresa!.id,
+        evento_id: eventoId,
+        descricao: despesa.descricao.trim(),
+        fornecedor: despesa.fornecedor.trim() || null,
+        valor: Number(despesa.valor) || 0,
+        data: despesa.data,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setDespesa({ descricao: "", fornecedor: "", valor: 0, data: new Date().toISOString().slice(0, 10) });
+      invalidarTudo();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeDespesa = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("despesas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidarTudo,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const mudarStatus = useMutation({
     mutationFn: async (status: Enums<"evento_status">) => {
       const { error } = await supabase.from("eventos").update({ status }).eq("id", eventoId);
@@ -192,6 +291,19 @@ function EventoDetalhePage() {
     e.preventDefault();
     if (!avulso.descricao.trim()) return toast.error("Descreva o item avulso.");
     addAvulso.mutate();
+  };
+
+  const submitParcela = (e: FormEvent) => {
+    e.preventDefault();
+    if (!parcela.data_vencimento) return toast.error("Informe a data de vencimento.");
+    if (!parcela.valor || parcela.valor <= 0) return toast.error("Informe o valor da parcela.");
+    addParcela.mutate();
+  };
+
+  const submitDespesa = (e: FormEvent) => {
+    e.preventDefault();
+    if (!despesa.descricao.trim()) return toast.error("Descreva a despesa.");
+    addDespesa.mutate();
   };
 
   if (carregandoEvento) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -359,6 +471,150 @@ function EventoDetalhePage() {
               </form>
             )}
           </section>
+
+          <section className="surface-card p-5">
+            <h2 className="mb-4 text-lg font-medium">Parcelas a receber</h2>
+            {parcelas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma parcela lançada ainda.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-10 print:hidden" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {parcelas.map((p) => {
+                    const atrasada = parcelaAtrasada(p);
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-medium">{p.descricao || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(p.data_vencimento)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(p.valor)}</TableCell>
+                        <TableCell>
+                          <span className={cn(badge({ tone: p.status === "pago" ? "success" : atrasada ? "destructive" : "warning" }))}>
+                            <span className="size-1.5 rounded-full bg-current" />
+                            {p.status === "pago" ? STATUS_PARCELA.pago : atrasada ? "Atrasada" : STATUS_PARCELA.pendente}
+                          </span>
+                        </TableCell>
+                        <TableCell className="flex items-center gap-1 print:hidden">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => alternarPagamento.mutate({ id: p.id, pago: p.status !== "pago" })}
+                            disabled={alternarPagamento.isPending}
+                          >
+                            {p.status === "pago" ? "Marcar pendente" : "Marcar pago"}
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => removeParcela.mutate(p.id)} disabled={removeParcela.isPending}>
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+
+            <form onSubmit={submitParcela} className="mt-4 flex flex-wrap gap-2 print:hidden">
+              <Input
+                placeholder="Ex.: Entrada, 2ª parcela…"
+                className="min-w-[160px] flex-1"
+                value={parcela.descricao}
+                onChange={(e) => setParcela({ ...parcela, descricao: e.target.value })}
+              />
+              <Input
+                type="date"
+                className="w-40"
+                value={parcela.data_vencimento}
+                onChange={(e) => setParcela({ ...parcela, data_vencimento: e.target.value })}
+              />
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                className="w-32"
+                placeholder="Valor"
+                value={parcela.valor}
+                onChange={(e) => setParcela({ ...parcela, valor: Number(e.target.value) })}
+              />
+              <Button type="submit" disabled={addParcela.isPending}>
+                <Plus /> Adicionar
+              </Button>
+            </form>
+          </section>
+
+          <section className="surface-card p-5">
+            <h2 className="mb-4 text-lg font-medium">Despesas</h2>
+            {despesas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma despesa lançada ainda.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Fornecedor</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="w-10 print:hidden" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {despesas.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.descricao}</TableCell>
+                      <TableCell className="text-muted-foreground">{d.fornecedor || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(d.data)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(d.valor)}</TableCell>
+                      <TableCell className="print:hidden">
+                        <Button variant="ghost" size="icon" onClick={() => removeDespesa.mutate(d.id)} disabled={removeDespesa.isPending}>
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            <form onSubmit={submitDespesa} className="mt-4 flex flex-wrap gap-2 print:hidden">
+              <Input
+                placeholder="Ex.: Aluguel de louças"
+                className="min-w-[160px] flex-1"
+                value={despesa.descricao}
+                onChange={(e) => setDespesa({ ...despesa, descricao: e.target.value })}
+              />
+              <Input
+                placeholder="Fornecedor (opcional)"
+                className="w-44"
+                value={despesa.fornecedor}
+                onChange={(e) => setDespesa({ ...despesa, fornecedor: e.target.value })}
+              />
+              <Input
+                type="date"
+                className="w-40"
+                value={despesa.data}
+                onChange={(e) => setDespesa({ ...despesa, data: e.target.value })}
+              />
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                className="w-32"
+                placeholder="Valor"
+                value={despesa.valor}
+                onChange={(e) => setDespesa({ ...despesa, valor: Number(e.target.value) })}
+              />
+              <Button type="submit" disabled={addDespesa.isPending}>
+                <Plus /> Adicionar
+              </Button>
+            </form>
+          </section>
         </div>
 
         <div className="space-y-6">
@@ -374,7 +630,23 @@ function EventoDetalhePage() {
           </section>
 
           <section className="surface-card p-5 print:hidden">
-            <h2 className="mb-1 text-sm font-medium">Margem (uso interno)</h2>
+            <h2 className="mb-4 text-lg font-medium">Financeiro</h2>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between"><dt className="text-muted-foreground">Recebido</dt><dd className="text-success">{formatCurrency(totalRecebido)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">A receber</dt><dd>{formatCurrency(totalAReceber)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Despesas</dt><dd className="text-destructive">{formatCurrency(totalDespesas)}</dd></div>
+              <div className="flex justify-between border-t pt-2 text-base font-medium"><dt>Margem realizada</dt><dd>{formatCurrency(margemRealizada)}</dd></div>
+            </dl>
+            {parcelasAtrasadas.length > 0 && (
+              <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                <span>{parcelasAtrasadas.length} parcela{parcelasAtrasadas.length > 1 ? "s" : ""} atrasada{parcelasAtrasadas.length > 1 ? "s" : ""}.</span>
+              </div>
+            )}
+          </section>
+
+          <section className="surface-card p-5 print:hidden">
+            <h2 className="mb-1 text-sm font-medium">Margem do cardápio (uso interno)</h2>
             <p className="mb-3 text-xs text-muted-foreground">Não é exibida ao cliente final — só à equipe.</p>
             <MargemBadge margem={margemCardapio} margemAlvo={empresa?.margem_alvo ?? 35} margemMinima={empresa?.margem_minima ?? 20} />
           </section>

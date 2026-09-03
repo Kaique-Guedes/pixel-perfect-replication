@@ -103,6 +103,54 @@ export type Database = {
           },
         ]
       }
+      despesas: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string
+          empresa_id: string
+          evento_id: string
+          fornecedor: string | null
+          id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          descricao: string
+          empresa_id: string
+          evento_id: string
+          fornecedor?: string | null
+          id?: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string
+          empresa_id?: string
+          evento_id?: string
+          fornecedor?: string | null
+          id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "despesas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           cnpj: string | null
@@ -421,6 +469,57 @@ export type Database = {
           },
         ]
       }
+      parcelas: {
+        Row: {
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          empresa_id: string
+          evento_id: string
+          id: string
+          status: Database["public"]["Enums"]["status_parcela"]
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao?: string
+          empresa_id: string
+          evento_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["status_parcela"]
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          empresa_id?: string
+          evento_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["status_parcela"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcelas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           created_at: string
@@ -529,6 +628,7 @@ export type Database = {
         | "confirmado"
         | "realizado"
         | "cancelado"
+      status_parcela: "pendente" | "pago"
       tipo_item_avulso: "fixo" | "por_convidado"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
       unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
@@ -686,6 +786,7 @@ export const Constants = {
         "realizado",
         "cancelado",
       ],
+      status_parcela: ["pendente", "pago"],
       tipo_item_avulso: ["fixo", "por_convidado"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
       unidade_medida: ["kg", "g", "litro", "ml", "unidade"],

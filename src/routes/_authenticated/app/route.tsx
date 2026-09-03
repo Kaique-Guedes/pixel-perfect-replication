@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ChefHat, LayoutDashboard, LogOut, Settings, ShoppingBasket, Users } from "lucide-react";
+import { CalendarDays, ChefHat, LayoutDashboard, LogOut, Settings, ShoppingBasket, Users, Wallet } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Logo } from "@/components/app/Logo";
 import {
@@ -30,6 +30,7 @@ const NAV = [
   { to: "/app/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/app/ingredientes", label: "Ingredientes", icon: ShoppingBasket },
   { to: "/app/cardapio", label: "Cardápio", icon: ChefHat },
+  { to: "/app/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/app/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
