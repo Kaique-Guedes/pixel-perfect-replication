@@ -14,77 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      checklists: {
-        Row: {
-          created_at: string
-          empresa_id: string
-          id: string
-          nome: string
-        }
-        Insert: {
-          created_at?: string
-          empresa_id: string
-          id?: string
-          nome: string
-        }
-        Update: {
-          created_at?: string
-          empresa_id?: string
-          id?: string
-          nome?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "checklists_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      checklist_template_itens: {
-        Row: {
-          checklist_id: string
-          dias_antes: number
-          empresa_id: string
-          id: string
-          ordem: number
-          titulo: string
-        }
-        Insert: {
-          checklist_id: string
-          dias_antes?: number
-          empresa_id: string
-          id?: string
-          ordem?: number
-          titulo: string
-        }
-        Update: {
-          checklist_id?: string
-          dias_antes?: number
-          empresa_id?: string
-          id?: string
-          ordem?: number
-          titulo?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "checklist_template_itens_checklist_id_fkey"
-            columns: ["checklist_id"]
-            isOneToOne: false
-            referencedRelation: "checklists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "checklist_template_itens_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       clientes: {
         Row: {
           created_at: string
@@ -174,54 +103,6 @@ export type Database = {
           },
         ]
       }
-      despesas: {
-        Row: {
-          created_at: string
-          data: string
-          descricao: string
-          empresa_id: string
-          evento_id: string
-          fornecedor: string | null
-          id: string
-          valor: number
-        }
-        Insert: {
-          created_at?: string
-          data?: string
-          descricao: string
-          empresa_id: string
-          evento_id: string
-          fornecedor?: string | null
-          id?: string
-          valor?: number
-        }
-        Update: {
-          created_at?: string
-          data?: string
-          descricao?: string
-          empresa_id?: string
-          evento_id?: string
-          fornecedor?: string | null
-          id?: string
-          valor?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "despesas_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despesas_evento_id_fkey"
-            columns: ["evento_id"]
-            isOneToOne: false
-            referencedRelation: "eventos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       empresas: {
         Row: {
           cnpj: string | null
@@ -255,103 +136,6 @@ export type Database = {
         }
         Relationships: []
       }
-      evento_cardapio_itens: {
-        Row: {
-          created_at: string
-          empresa_id: string
-          evento_id: string
-          id: string
-          item_cardapio_id: string
-        }
-        Insert: {
-          created_at?: string
-          empresa_id: string
-          evento_id: string
-          id?: string
-          item_cardapio_id: string
-        }
-        Update: {
-          created_at?: string
-          empresa_id?: string
-          evento_id?: string
-          id?: string
-          item_cardapio_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "evento_cardapio_itens_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evento_cardapio_itens_evento_id_fkey"
-            columns: ["evento_id"]
-            isOneToOne: false
-            referencedRelation: "eventos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evento_cardapio_itens_item_cardapio_id_fkey"
-            columns: ["item_cardapio_id"]
-            isOneToOne: false
-            referencedRelation: "itens_cardapio"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      evento_checklist_itens: {
-        Row: {
-          concluido: boolean
-          concluido_em: string | null
-          created_at: string
-          data_prazo: string | null
-          empresa_id: string
-          evento_id: string
-          id: string
-          ordem: number
-          titulo: string
-        }
-        Insert: {
-          concluido?: boolean
-          concluido_em?: string | null
-          created_at?: string
-          data_prazo?: string | null
-          empresa_id: string
-          evento_id: string
-          id?: string
-          ordem?: number
-          titulo: string
-        }
-        Update: {
-          concluido?: boolean
-          concluido_em?: string | null
-          created_at?: string
-          data_prazo?: string | null
-          empresa_id?: string
-          evento_id?: string
-          id?: string
-          ordem?: number
-          titulo?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "evento_checklist_itens_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evento_checklist_itens_evento_id_fkey"
-            columns: ["evento_id"]
-            isOneToOne: false
-            referencedRelation: "eventos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       eventos: {
         Row: {
           cliente_id: string | null
@@ -364,7 +148,6 @@ export type Database = {
           id: string
           local: string | null
           observacoes: string | null
-          portal_token: string
           status: Database["public"]["Enums"]["evento_status"]
           titulo: string
           updated_at: string
@@ -380,7 +163,6 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
-          portal_token?: string
           status?: Database["public"]["Enums"]["evento_status"]
           titulo: string
           updated_at?: string
@@ -396,7 +178,6 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
-          portal_token?: string
           status?: Database["public"]["Enums"]["evento_status"]
           titulo?: string
           updated_at?: string
@@ -414,291 +195,6 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ingredientes: {
-        Row: {
-          categoria: Database["public"]["Enums"]["categoria_ingrediente"]
-          created_at: string
-          empresa_id: string
-          estoque_atual: number
-          fornecedor: string | null
-          id: string
-          nome: string
-          preco_unidade: number
-          unidade: Database["public"]["Enums"]["unidade_medida"]
-          updated_at: string
-        }
-        Insert: {
-          categoria?: Database["public"]["Enums"]["categoria_ingrediente"]
-          created_at?: string
-          empresa_id: string
-          estoque_atual?: number
-          fornecedor?: string | null
-          id?: string
-          nome: string
-          preco_unidade?: number
-          unidade: Database["public"]["Enums"]["unidade_medida"]
-          updated_at?: string
-        }
-        Update: {
-          categoria?: Database["public"]["Enums"]["categoria_ingrediente"]
-          created_at?: string
-          empresa_id?: string
-          estoque_atual?: number
-          fornecedor?: string | null
-          id?: string
-          nome?: string
-          preco_unidade?: number
-          unidade?: Database["public"]["Enums"]["unidade_medida"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ingredientes_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      itens_cardapio: {
-        Row: {
-          categoria: Database["public"]["Enums"]["categoria_item_cardapio"]
-          created_at: string
-          empresa_id: string
-          foto_url: string | null
-          id: string
-          nome: string
-          updated_at: string
-        }
-        Insert: {
-          categoria: Database["public"]["Enums"]["categoria_item_cardapio"]
-          created_at?: string
-          empresa_id: string
-          foto_url?: string | null
-          id?: string
-          nome: string
-          updated_at?: string
-        }
-        Update: {
-          categoria?: Database["public"]["Enums"]["categoria_item_cardapio"]
-          created_at?: string
-          empresa_id?: string
-          foto_url?: string | null
-          id?: string
-          nome?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "itens_cardapio_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      itens_cardapio_ingredientes: {
-        Row: {
-          empresa_id: string
-          id: string
-          ingrediente_id: string
-          item_cardapio_id: string
-          quantidade_por_convidado: number
-        }
-        Insert: {
-          empresa_id: string
-          id?: string
-          ingrediente_id: string
-          item_cardapio_id: string
-          quantidade_por_convidado: number
-        }
-        Update: {
-          empresa_id?: string
-          id?: string
-          ingrediente_id?: string
-          item_cardapio_id?: string
-          quantidade_por_convidado?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "itens_cardapio_ingredientes_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "itens_cardapio_ingredientes_ingrediente_id_fkey"
-            columns: ["ingrediente_id"]
-            isOneToOne: false
-            referencedRelation: "ingredientes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "itens_cardapio_ingredientes_item_cardapio_id_fkey"
-            columns: ["item_cardapio_id"]
-            isOneToOne: false
-            referencedRelation: "itens_cardapio"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      movimentacoes_estoque: {
-        Row: {
-          created_at: string
-          data: string
-          empresa_id: string
-          evento_id: string | null
-          id: string
-          ingrediente_id: string
-          observacao: string | null
-          quantidade: number
-          tipo: Database["public"]["Enums"]["tipo_movimentacao_estoque"]
-        }
-        Insert: {
-          created_at?: string
-          data?: string
-          empresa_id: string
-          evento_id?: string | null
-          id?: string
-          ingrediente_id: string
-          observacao?: string | null
-          quantidade: number
-          tipo: Database["public"]["Enums"]["tipo_movimentacao_estoque"]
-        }
-        Update: {
-          created_at?: string
-          data?: string
-          empresa_id?: string
-          evento_id?: string | null
-          id?: string
-          ingrediente_id?: string
-          observacao?: string | null
-          quantidade?: number
-          tipo?: Database["public"]["Enums"]["tipo_movimentacao_estoque"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "movimentacoes_estoque_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "movimentacoes_estoque_evento_id_fkey"
-            columns: ["evento_id"]
-            isOneToOne: false
-            referencedRelation: "eventos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "movimentacoes_estoque_ingrediente_id_fkey"
-            columns: ["ingrediente_id"]
-            isOneToOne: false
-            referencedRelation: "ingredientes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      orcamento_itens_avulsos: {
-        Row: {
-          created_at: string
-          descricao: string
-          empresa_id: string
-          evento_id: string
-          id: string
-          tipo: Database["public"]["Enums"]["tipo_item_avulso"]
-          valor: number
-        }
-        Insert: {
-          created_at?: string
-          descricao: string
-          empresa_id: string
-          evento_id: string
-          id?: string
-          tipo?: Database["public"]["Enums"]["tipo_item_avulso"]
-          valor?: number
-        }
-        Update: {
-          created_at?: string
-          descricao?: string
-          empresa_id?: string
-          evento_id?: string
-          id?: string
-          tipo?: Database["public"]["Enums"]["tipo_item_avulso"]
-          valor?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orcamento_itens_avulsos_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orcamento_itens_avulsos_evento_id_fkey"
-            columns: ["evento_id"]
-            isOneToOne: false
-            referencedRelation: "eventos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      parcelas: {
-        Row: {
-          created_at: string
-          data_pagamento: string | null
-          data_vencimento: string
-          descricao: string
-          empresa_id: string
-          evento_id: string
-          id: string
-          status: Database["public"]["Enums"]["status_parcela"]
-          valor: number
-        }
-        Insert: {
-          created_at?: string
-          data_pagamento?: string | null
-          data_vencimento: string
-          descricao?: string
-          empresa_id: string
-          evento_id: string
-          id?: string
-          status?: Database["public"]["Enums"]["status_parcela"]
-          valor?: number
-        }
-        Update: {
-          created_at?: string
-          data_pagamento?: string | null
-          data_vencimento?: string
-          descricao?: string
-          empresa_id?: string
-          evento_id?: string
-          id?: string
-          status?: Database["public"]["Enums"]["status_parcela"]
-          valor?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "parcelas_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parcelas_evento_id_fkey"
-            columns: ["evento_id"]
-            isOneToOne: false
-            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
         ]
@@ -786,50 +282,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      portal_evento: {
-        Args: { _token: string }
-        Returns: {
-          titulo: string
-          data: string
-          hora_inicio: string
-          hora_fim: string
-          local: string | null
-          convidados_estimados: number
-          status: Database["public"]["Enums"]["evento_status"]
-          cliente_nome: string | null
-          empresa_nome: string
-        }[]
-      }
-      portal_evento_cardapio: {
-        Args: { _token: string }
-        Returns: {
-          nome: string
-          categoria: Database["public"]["Enums"]["categoria_item_cardapio"]
-        }[]
-      }
-      portal_parcelas: {
-        Args: { _token: string }
-        Returns: {
-          descricao: string
-          valor: number
-          data_vencimento: string
-          status: Database["public"]["Enums"]["status_parcela"]
-        }[]
-      }
     }
     Enums: {
       app_role: "admin" | "usuario"
-      categoria_ingrediente:
-        | "proteina"
-        | "bebida"
-        | "descartavel"
-        | "decoracao"
-        | "outro"
-      categoria_item_cardapio:
-        | "entrada"
-        | "prato_principal"
-        | "sobremesa"
-        | "bebida"
       cliente_status:
         | "novo_lead"
         | "em_negociacao"
@@ -841,11 +296,7 @@ export type Database = {
         | "confirmado"
         | "realizado"
         | "cancelado"
-      status_parcela: "pendente" | "pago"
-      tipo_item_avulso: "fixo" | "por_convidado"
-      tipo_movimentacao_estoque: "entrada" | "saida"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
-      unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -974,19 +425,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "usuario"],
-      categoria_ingrediente: [
-        "proteina",
-        "bebida",
-        "descartavel",
-        "decoracao",
-        "outro",
-      ],
-      categoria_item_cardapio: [
-        "entrada",
-        "prato_principal",
-        "sobremesa",
-        "bebida",
-      ],
       cliente_status: [
         "novo_lead",
         "em_negociacao",
@@ -1000,11 +438,7 @@ export const Constants = {
         "realizado",
         "cancelado",
       ],
-      status_parcela: ["pendente", "pago"],
-      tipo_item_avulso: ["fixo", "por_convidado"],
-      tipo_movimentacao_estoque: ["entrada", "saida"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
-      unidade_medida: ["kg", "g", "litro", "ml", "unidade"],
     },
   },
 } as const

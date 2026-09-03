@@ -2,16 +2,15 @@ import { useMemo, useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, AlertTriangle, Copy, FileDown, ListChecks, Lock, Plus, Trash2, Unlock } from "lucide-react";
+import { ArrowLeft, AlertTriangle, FileDown, Lock, Plus, Trash2, Unlock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import type { Enums, Tables } from "@/integrations/supabase/types";
+import type { Enums } from "@/integrations/supabase/types";
 import {
   CATEGORIA_ITEM_CARDAPIO,
   STATUS_PARCELA,
   TIPO_ITEM_AVULSO,
   calcularCustoItemCardapio,
-  calcularDataPrazo,
   formatCurrency,
   formatDate,
   formatHora,
@@ -24,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/app/agenda/$eventoId")({
@@ -45,8 +43,6 @@ function EventoDetalhePage() {
   });
   const [parcela, setParcela] = useState({ descricao: "", valor: 0, data_vencimento: "" });
   const [despesa, setDespesa] = useState({ descricao: "", fornecedor: "", valor: 0, data: new Date().toISOString().slice(0, 10) });
-  const [templateEscolhido, setTemplateEscolhido] = useState("");
-  const [tarefaCustom, setTarefaCustom] = useState({ titulo: "", data_prazo: "" });
 
   const { data: evento, isLoading: carregandoEvento } = useQuery({
     queryKey: ["eventos", eventoId],
@@ -109,28 +105,6 @@ function EventoDetalhePage() {
     },
   });
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ["checklists"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("checklists").select("id, nome, checklist_template_itens(titulo, dias_antes, ordem)").order("nome");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: tarefas = [] } = useQuery({
-    queryKey: ["evento-checklist-itens", eventoId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("evento_checklist_itens")
-        .select("*")
-        .eq("evento_id", eventoId)
-        .order("data_prazo", { ascending: true, nullsFirst: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const editavel = evento?.status === "orcamento";
   const convidados = evento?.convidados_estimados ?? 0;
   const markup = empresa?.markup_padrao ?? 100;
@@ -160,7 +134,6 @@ function EventoDetalhePage() {
   const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0);
   const margemRealizada = total - totalDespesas;
 
-  const tarefasAtrasadas = tarefas.filter((t) => !t.concluido && t.data_prazo && t.data_prazo < new Date().toISOString().slice(0, 10));
   const itensDisponiveis = catalogo.filter((c) => !itensCalculados.some((i) => i.id === c.id));
 
   const invalidarTudo = () => {
@@ -168,7 +141,6 @@ function EventoDetalhePage() {
     void qc.invalidateQueries({ queryKey: ["orcamento-itens-avulsos", eventoId] });
     void qc.invalidateQueries({ queryKey: ["parcelas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["despesas", eventoId] });
-    void qc.invalidateQueries({ queryKey: ["evento-checklist-itens", eventoId] });
     void qc.invalidateQueries({ queryKey: ["eventos", eventoId] });
     void qc.invalidateQueries({ queryKey: ["eventos"] });
     void qc.invalidateQueries({ queryKey: ["financeiro"] });
@@ -299,71 +271,6 @@ function EventoDetalhePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const aplicarTemplate = useMutation({
-    mutationFn: async () => {
-      const template = templates.find((t) => t.id === templateEscolhido);
-      if (!template || !evento) return;
-      const itens = template.checklist_template_itens
-        .slice()
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((item, idx) => ({
-          empresa_id: empresa!.id,
-          evento_id: eventoId,
-          titulo: item.titulo,
-          data_prazo: calcularDataPrazo(evento.data, item.dias_antes),
-          ordem: idx,
-        }));
-      if (itens.length === 0) return;
-      const { error } = await supabase.from("evento_checklist_itens").insert(itens);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setTemplateEscolhido("");
-      invalidarTudo();
-      toast.success("Checklist aplicado.");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const addTarefa = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("evento_checklist_itens").insert({
-        empresa_id: empresa!.id,
-        evento_id: eventoId,
-        titulo: tarefaCustom.titulo.trim(),
-        data_prazo: tarefaCustom.data_prazo || null,
-        ordem: tarefas.length,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setTarefaCustom({ titulo: "", data_prazo: "" });
-      invalidarTudo();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const alternarConcluido = useMutation({
-    mutationFn: async (p: { id: string; concluido: boolean }) => {
-      const { error } = await supabase
-        .from("evento_checklist_itens")
-        .update({ concluido: p.concluido, concluido_em: p.concluido ? new Date().toISOString() : null })
-        .eq("id", p.id);
-      if (error) throw error;
-    },
-    onSuccess: invalidarTudo,
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const removeTarefa = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("evento_checklist_itens").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: invalidarTudo,
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const mudarStatus = useMutation({
     mutationFn: async (status: Enums<"evento_status">) => {
       const { error } = await supabase.from("eventos").update({ status }).eq("id", eventoId);
@@ -397,12 +304,6 @@ function EventoDetalhePage() {
     e.preventDefault();
     if (!despesa.descricao.trim()) return toast.error("Descreva a despesa.");
     addDespesa.mutate();
-  };
-
-  const submitTarefa = (e: FormEvent) => {
-    e.preventDefault();
-    if (!tarefaCustom.titulo.trim()) return toast.error("Descreva a tarefa.");
-    addTarefa.mutate();
   };
 
   if (carregandoEvento) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -450,22 +351,6 @@ function EventoDetalhePage() {
           </span>
         </div>
       )}
-
-      <div className="mb-6 flex flex-wrap items-center gap-2 text-sm print:hidden">
-        <span className="text-muted-foreground">Link do portal do cliente:</span>
-        <code className="rounded bg-accent px-2 py-1 text-xs">{`${typeof window !== "undefined" ? window.location.origin : ""}/portal/${evento.portal_token}`}</code>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            void navigator.clipboard.writeText(`${window.location.origin}/portal/${evento.portal_token}`);
-            toast.success("Link copiado.");
-          }}
-        >
-          <Copy className="size-3.5" /> Copiar
-        </Button>
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -730,71 +615,6 @@ function EventoDetalhePage() {
               </Button>
             </form>
           </section>
-
-          <section className="surface-card p-5">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-medium">
-              <ListChecks className="size-5" /> Checklist
-            </h2>
-            {tarefas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma tarefa ainda. Aplique um template ou adicione uma tarefa avulsa.</p>
-            ) : (
-              <ul className="divide-y">
-                {tarefas.map((t) => {
-                  const atrasada = !t.concluido && t.data_prazo && t.data_prazo < new Date().toISOString().slice(0, 10);
-                  return (
-                    <li key={t.id} className="flex items-center gap-3 py-2.5">
-                      <Checkbox
-                        checked={t.concluido}
-                        onCheckedChange={(v) => alternarConcluido.mutate({ id: t.id, concluido: v === true })}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className={t.concluido ? "text-sm text-muted-foreground line-through" : "text-sm"}>{t.titulo}</p>
-                        {t.data_prazo && (
-                          <p className={atrasada ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
-                            Prazo: {formatDate(t.data_prazo)}{atrasada ? " (atrasada)" : ""}
-                          </p>
-                        )}
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => removeTarefa.mutate(t.id)} disabled={removeTarefa.isPending}>
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
-              <Select value={templateEscolhido || "_"} onValueChange={(v) => setTemplateEscolhido(v === "_" ? "" : v)}>
-                <SelectTrigger className="flex-1"><SelectValue placeholder="Aplicar um template…" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_">Selecione…</SelectItem>
-                  {templates.map((t) => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button type="button" variant="outline" disabled={!templateEscolhido || aplicarTemplate.isPending} onClick={() => aplicarTemplate.mutate()}>
-                Aplicar
-              </Button>
-            </div>
-
-            <form onSubmit={submitTarefa} className="mt-2 flex flex-wrap gap-2">
-              <Input
-                placeholder="Tarefa avulsa"
-                className="min-w-[160px] flex-1"
-                value={tarefaCustom.titulo}
-                onChange={(e) => setTarefaCustom({ ...tarefaCustom, titulo: e.target.value })}
-              />
-              <Input
-                type="date"
-                className="w-40"
-                value={tarefaCustom.data_prazo}
-                onChange={(e) => setTarefaCustom({ ...tarefaCustom, data_prazo: e.target.value })}
-              />
-              <Button type="submit" disabled={addTarefa.isPending}>
-                <Plus /> Adicionar
-              </Button>
-            </form>
-          </section>
         </div>
 
         <div className="space-y-6">
@@ -821,12 +641,6 @@ function EventoDetalhePage() {
               <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                 <span>{parcelasAtrasadas.length} parcela{parcelasAtrasadas.length > 1 ? "s" : ""} atrasada{parcelasAtrasadas.length > 1 ? "s" : ""}.</span>
-              </div>
-            )}
-            {tarefasAtrasadas.length > 0 && (
-              <div className="mt-2 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-2.5 text-xs text-warning-foreground">
-                <ListChecks className="mt-0.5 size-3.5 shrink-0" />
-                <span>{tarefasAtrasadas.length} tarefa{tarefasAtrasadas.length > 1 ? "s" : ""} do checklist atrasada{tarefasAtrasadas.length > 1 ? "s" : ""}.</span>
               </div>
             )}
           </section>
