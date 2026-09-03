@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      checklists: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_template_itens: {
+        Row: {
+          checklist_id: string
+          dias_antes: number
+          empresa_id: string
+          id: string
+          ordem: number
+          titulo: string
+        }
+        Insert: {
+          checklist_id: string
+          dias_antes?: number
+          empresa_id: string
+          id?: string
+          ordem?: number
+          titulo: string
+        }
+        Update: {
+          checklist_id?: string
+          dias_antes?: number
+          empresa_id?: string
+          id?: string
+          ordem?: number
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_itens_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_template_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
@@ -230,6 +301,57 @@ export type Database = {
           },
         ]
       }
+      evento_checklist_itens: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          created_at: string
+          data_prazo: string | null
+          empresa_id: string
+          evento_id: string
+          id: string
+          ordem: number
+          titulo: string
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          data_prazo?: string | null
+          empresa_id: string
+          evento_id: string
+          id?: string
+          ordem?: number
+          titulo: string
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          data_prazo?: string | null
+          empresa_id?: string
+          evento_id?: string
+          id?: string
+          ordem?: number
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_checklist_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_checklist_itens_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventos: {
         Row: {
           cliente_id: string | null
@@ -242,6 +364,7 @@ export type Database = {
           id: string
           local: string | null
           observacoes: string | null
+          portal_token: string
           status: Database["public"]["Enums"]["evento_status"]
           titulo: string
           updated_at: string
@@ -257,6 +380,7 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
+          portal_token?: string
           status?: Database["public"]["Enums"]["evento_status"]
           titulo: string
           updated_at?: string
@@ -272,6 +396,7 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
+          portal_token?: string
           status?: Database["public"]["Enums"]["evento_status"]
           titulo?: string
           updated_at?: string
@@ -420,6 +545,64 @@ export type Database = {
             columns: ["item_cardapio_id"]
             isOneToOne: false
             referencedRelation: "itens_cardapio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movimentacoes_estoque: {
+        Row: {
+          created_at: string
+          data: string
+          empresa_id: string
+          evento_id: string | null
+          id: string
+          ingrediente_id: string
+          observacao: string | null
+          quantidade: number
+          tipo: Database["public"]["Enums"]["tipo_movimentacao_estoque"]
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          empresa_id: string
+          evento_id?: string | null
+          id?: string
+          ingrediente_id: string
+          observacao?: string | null
+          quantidade: number
+          tipo: Database["public"]["Enums"]["tipo_movimentacao_estoque"]
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          empresa_id?: string
+          evento_id?: string | null
+          id?: string
+          ingrediente_id?: string
+          observacao?: string | null
+          quantidade?: number
+          tipo?: Database["public"]["Enums"]["tipo_movimentacao_estoque"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_ingrediente_id_fkey"
+            columns: ["ingrediente_id"]
+            isOneToOne: false
+            referencedRelation: "ingredientes"
             referencedColumns: ["id"]
           },
         ]
@@ -603,6 +786,36 @@ export type Database = {
         }
         Returns: boolean
       }
+      portal_evento: {
+        Args: { _token: string }
+        Returns: {
+          titulo: string
+          data: string
+          hora_inicio: string
+          hora_fim: string
+          local: string | null
+          convidados_estimados: number
+          status: Database["public"]["Enums"]["evento_status"]
+          cliente_nome: string | null
+          empresa_nome: string
+        }[]
+      }
+      portal_evento_cardapio: {
+        Args: { _token: string }
+        Returns: {
+          nome: string
+          categoria: Database["public"]["Enums"]["categoria_item_cardapio"]
+        }[]
+      }
+      portal_parcelas: {
+        Args: { _token: string }
+        Returns: {
+          descricao: string
+          valor: number
+          data_vencimento: string
+          status: Database["public"]["Enums"]["status_parcela"]
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "usuario"
@@ -630,6 +843,7 @@ export type Database = {
         | "cancelado"
       status_parcela: "pendente" | "pago"
       tipo_item_avulso: "fixo" | "por_convidado"
+      tipo_movimentacao_estoque: "entrada" | "saida"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
       unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
     }
@@ -788,6 +1002,7 @@ export const Constants = {
       ],
       status_parcela: ["pendente", "pago"],
       tipo_item_avulso: ["fixo", "por_convidado"],
+      tipo_movimentacao_estoque: ["entrada", "saida"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
       unidade_medida: ["kg", "g", "litro", "ml", "unidade"],
     },

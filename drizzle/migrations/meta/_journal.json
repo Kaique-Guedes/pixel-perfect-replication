@@ -29,6 +29,27 @@
       "when": 1788420000000,
       "tag": "0003_fase4_financeiro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788430000000,
+      "tag": "0004_fase5_estoque",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788440000000,
+      "tag": "0005_fase6_checklist",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788450000000,
+      "tag": "0006_fase7_portal_cliente",
+      "breakpoints": true
     }
   ]
 }

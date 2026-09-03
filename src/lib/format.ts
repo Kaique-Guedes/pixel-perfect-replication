@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Enums } from "@/integrations/supabase/types";
 
@@ -109,4 +109,17 @@ export const STATUS_PARCELA: Record<Enums<"status_parcela">, string> = {
 /** "Atrasada" é sempre derivado (nunca armazenado): pendente + vencimento no passado. */
 export function parcelaAtrasada(parcela: { status: Enums<"status_parcela">; data_vencimento: string }) {
   return parcela.status === "pendente" && parcela.data_vencimento < format(new Date(), "yyyy-MM-dd");
+}
+
+export const CATEGORIA_INGREDIENTE_ORDEM: Enums<"categoria_ingrediente">[] = [
+  "proteina",
+  "bebida",
+  "descartavel",
+  "decoracao",
+  "outro",
+];
+
+/** Prazo de uma tarefa de checklist: N dias antes da data do evento. */
+export function calcularDataPrazo(dataEvento: string, diasAntes: number) {
+  return format(subDays(parseISO(dataEvento), diasAntes), "yyyy-MM-dd");
 }
