@@ -17,6 +17,13 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppAgendaRouteImport } from './routes/_authenticated/app/agenda'
+import { Route as AuthenticatedAppCardapioRouteImport } from './routes/_authenticated/app/cardapio'
+import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenticated/app/clientes'
+import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
+import { Route as AuthenticatedAppFinanceiroRouteImport } from './routes/_authenticated/app/financeiro'
+import { Route as AuthenticatedAppIngredientesRouteImport } from './routes/_authenticated/app/ingredientes'
+import { Route as AuthenticatedAppAgendaEventoIdRouteImport } from './routes/_authenticated/app/agenda.$eventoId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +64,47 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
+const AuthenticatedAppAgendaRoute = AuthenticatedAppAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
+const AuthenticatedAppCardapioRoute =
+  AuthenticatedAppCardapioRouteImport.update({
+    id: '/cardapio',
+    path: '/cardapio',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppClientesRoute =
+  AuthenticatedAppClientesRouteImport.update({
+    id: '/clientes',
+    path: '/clientes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppConfiguracoesRoute =
+  AuthenticatedAppConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppFinanceiroRoute =
+  AuthenticatedAppFinanceiroRouteImport.update({
+    id: '/financeiro',
+    path: '/financeiro',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppIngredientesRoute =
+  AuthenticatedAppIngredientesRouteImport.update({
+    id: '/ingredientes',
+    path: '/ingredientes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppAgendaEventoIdRoute =
+  AuthenticatedAppAgendaEventoIdRouteImport.update({
+    id: '/$eventoId',
+    path: '/$eventoId',
+    getParentRoute: () => AuthenticatedAppAgendaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,7 +113,14 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/app/agenda': typeof AuthenticatedAppAgendaRouteWithChildren
+  '/app/cardapio': typeof AuthenticatedAppCardapioRoute
+  '/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
+  '/app/ingredientes': typeof AuthenticatedAppIngredientesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/agenda/$eventoId': typeof AuthenticatedAppAgendaEventoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -73,7 +128,14 @@ export interface FileRoutesByTo {
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/app/agenda': typeof AuthenticatedAppAgendaRouteWithChildren
+  '/app/cardapio': typeof AuthenticatedAppCardapioRoute
+  '/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
+  '/app/ingredientes': typeof AuthenticatedAppIngredientesRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/agenda/$eventoId': typeof AuthenticatedAppAgendaEventoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,7 +146,14 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/app/agenda': typeof AuthenticatedAppAgendaRouteWithChildren
+  '/_authenticated/app/cardapio': typeof AuthenticatedAppCardapioRoute
+  '/_authenticated/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/_authenticated/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
+  '/_authenticated/app/ingredientes': typeof AuthenticatedAppIngredientesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/agenda/$eventoId': typeof AuthenticatedAppAgendaEventoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,7 +164,14 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/app'
     | '/onboarding'
+    | '/app/agenda'
+    | '/app/cardapio'
+    | '/app/clientes'
+    | '/app/configuracoes'
+    | '/app/financeiro'
+    | '/app/ingredientes'
     | '/app/'
+    | '/app/agenda/$eventoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -103,7 +179,14 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/redefinir-senha'
     | '/onboarding'
+    | '/app/agenda'
+    | '/app/cardapio'
+    | '/app/clientes'
+    | '/app/configuracoes'
+    | '/app/financeiro'
+    | '/app/ingredientes'
     | '/app'
+    | '/app/agenda/$eventoId'
   id:
     | '__root__'
     | '/'
@@ -113,7 +196,14 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/_authenticated/app'
     | '/_authenticated/onboarding'
+    | '/_authenticated/app/agenda'
+    | '/_authenticated/app/cardapio'
+    | '/_authenticated/app/clientes'
+    | '/_authenticated/app/configuracoes'
+    | '/_authenticated/app/financeiro'
+    | '/_authenticated/app/ingredientes'
     | '/_authenticated/app/'
+    | '/_authenticated/app/agenda/$eventoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -182,14 +272,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/agenda': {
+      id: '/_authenticated/app/agenda'
+      path: '/agenda'
+      fullPath: '/app/agenda'
+      preLoaderRoute: typeof AuthenticatedAppAgendaRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/cardapio': {
+      id: '/_authenticated/app/cardapio'
+      path: '/cardapio'
+      fullPath: '/app/cardapio'
+      preLoaderRoute: typeof AuthenticatedAppCardapioRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/clientes': {
+      id: '/_authenticated/app/clientes'
+      path: '/clientes'
+      fullPath: '/app/clientes'
+      preLoaderRoute: typeof AuthenticatedAppClientesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/configuracoes': {
+      id: '/_authenticated/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAppConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/financeiro': {
+      id: '/_authenticated/app/financeiro'
+      path: '/financeiro'
+      fullPath: '/app/financeiro'
+      preLoaderRoute: typeof AuthenticatedAppFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/ingredientes': {
+      id: '/_authenticated/app/ingredientes'
+      path: '/ingredientes'
+      fullPath: '/app/ingredientes'
+      preLoaderRoute: typeof AuthenticatedAppIngredientesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/agenda/$eventoId': {
+      id: '/_authenticated/app/agenda/$eventoId'
+      path: '/$eventoId'
+      fullPath: '/app/agenda/$eventoId'
+      preLoaderRoute: typeof AuthenticatedAppAgendaEventoIdRouteImport
+      parentRoute: typeof AuthenticatedAppAgendaRoute
+    }
   }
 }
 
+interface AuthenticatedAppAgendaRouteChildren {
+  AuthenticatedAppAgendaEventoIdRoute: typeof AuthenticatedAppAgendaEventoIdRoute
+}
+
+const AuthenticatedAppAgendaRouteChildren: AuthenticatedAppAgendaRouteChildren =
+  {
+    AuthenticatedAppAgendaEventoIdRoute: AuthenticatedAppAgendaEventoIdRoute,
+  }
+
+const AuthenticatedAppAgendaRouteWithChildren =
+  AuthenticatedAppAgendaRoute._addFileChildren(
+    AuthenticatedAppAgendaRouteChildren,
+  )
+
 interface AuthenticatedAppRouteRouteChildren {
+  AuthenticatedAppAgendaRoute: typeof AuthenticatedAppAgendaRouteWithChildren
+  AuthenticatedAppCardapioRoute: typeof AuthenticatedAppCardapioRoute
+  AuthenticatedAppClientesRoute: typeof AuthenticatedAppClientesRoute
+  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
+  AuthenticatedAppFinanceiroRoute: typeof AuthenticatedAppFinanceiroRoute
+  AuthenticatedAppIngredientesRoute: typeof AuthenticatedAppIngredientesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
+  AuthenticatedAppAgendaRoute: AuthenticatedAppAgendaRouteWithChildren,
+  AuthenticatedAppCardapioRoute: AuthenticatedAppCardapioRoute,
+  AuthenticatedAppClientesRoute: AuthenticatedAppClientesRoute,
+  AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
+  AuthenticatedAppFinanceiroRoute: AuthenticatedAppFinanceiroRoute,
+  AuthenticatedAppIngredientesRoute: AuthenticatedAppIngredientesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 
