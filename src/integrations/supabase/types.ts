@@ -136,6 +136,52 @@ export type Database = {
         }
         Relationships: []
       }
+      evento_cardapio_itens: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          evento_id: string
+          id: string
+          item_cardapio_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          evento_id: string
+          id?: string
+          item_cardapio_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          evento_id?: string
+          id?: string
+          item_cardapio_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_cardapio_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_cardapio_itens_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_cardapio_itens_item_cardapio_id_fkey"
+            columns: ["item_cardapio_id"]
+            isOneToOne: false
+            referencedRelation: "itens_cardapio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventos: {
         Row: {
           cliente_id: string | null
@@ -195,6 +241,137 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingredientes: {
+        Row: {
+          categoria: Database["public"]["Enums"]["categoria_ingrediente"]
+          created_at: string
+          empresa_id: string
+          estoque_atual: number
+          fornecedor: string | null
+          id: string
+          nome: string
+          preco_unidade: number
+          unidade: Database["public"]["Enums"]["unidade_medida"]
+          updated_at: string
+        }
+        Insert: {
+          categoria?: Database["public"]["Enums"]["categoria_ingrediente"]
+          created_at?: string
+          empresa_id: string
+          estoque_atual?: number
+          fornecedor?: string | null
+          id?: string
+          nome: string
+          preco_unidade?: number
+          unidade: Database["public"]["Enums"]["unidade_medida"]
+          updated_at?: string
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["categoria_ingrediente"]
+          created_at?: string
+          empresa_id?: string
+          estoque_atual?: number
+          fornecedor?: string | null
+          id?: string
+          nome?: string
+          preco_unidade?: number
+          unidade?: Database["public"]["Enums"]["unidade_medida"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredientes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_cardapio: {
+        Row: {
+          categoria: Database["public"]["Enums"]["categoria_item_cardapio"]
+          created_at: string
+          empresa_id: string
+          foto_url: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          categoria: Database["public"]["Enums"]["categoria_item_cardapio"]
+          created_at?: string
+          empresa_id: string
+          foto_url?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["categoria_item_cardapio"]
+          created_at?: string
+          empresa_id?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_cardapio_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_cardapio_ingredientes: {
+        Row: {
+          empresa_id: string
+          id: string
+          ingrediente_id: string
+          item_cardapio_id: string
+          quantidade_por_convidado: number
+        }
+        Insert: {
+          empresa_id: string
+          id?: string
+          ingrediente_id: string
+          item_cardapio_id: string
+          quantidade_por_convidado: number
+        }
+        Update: {
+          empresa_id?: string
+          id?: string
+          ingrediente_id?: string
+          item_cardapio_id?: string
+          quantidade_por_convidado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_cardapio_ingredientes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_cardapio_ingredientes_ingrediente_id_fkey"
+            columns: ["ingrediente_id"]
+            isOneToOne: false
+            referencedRelation: "ingredientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_cardapio_ingredientes_item_cardapio_id_fkey"
+            columns: ["item_cardapio_id"]
+            isOneToOne: false
+            referencedRelation: "itens_cardapio"
             referencedColumns: ["id"]
           },
         ]
@@ -285,6 +462,17 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "usuario"
+      categoria_ingrediente:
+        | "proteina"
+        | "bebida"
+        | "descartavel"
+        | "decoracao"
+        | "outro"
+      categoria_item_cardapio:
+        | "entrada"
+        | "prato_principal"
+        | "sobremesa"
+        | "bebida"
       cliente_status:
         | "novo_lead"
         | "em_negociacao"
@@ -297,6 +485,7 @@ export type Database = {
         | "realizado"
         | "cancelado"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
+      unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -425,6 +614,19 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "usuario"],
+      categoria_ingrediente: [
+        "proteina",
+        "bebida",
+        "descartavel",
+        "decoracao",
+        "outro",
+      ],
+      categoria_item_cardapio: [
+        "entrada",
+        "prato_principal",
+        "sobremesa",
+        "bebida",
+      ],
       cliente_status: [
         "novo_lead",
         "em_negociacao",
@@ -439,6 +641,7 @@ export const Constants = {
         "cancelado",
       ],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
+      unidade_medida: ["kg", "g", "litro", "ml", "unidade"],
     },
   },
 } as const

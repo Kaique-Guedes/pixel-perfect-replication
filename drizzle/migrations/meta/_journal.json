@@ -8,6 +8,13 @@
       "when": 1788389237975,
       "tag": "0000_fase1_empresas_clientes_eventos",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788400000000,
+      "tag": "0001_fase2_ingredientes_cardapio",
+      "breakpoints": true
     }
   ]
 }

@@ -45,3 +45,53 @@ export const ORIGENS_LEAD = [
 
 /** Status que travam a agenda (regra de overbooking) */
 export const STATUS_BLOQUEIA_AGENDA: Enums<"evento_status">[] = ["contrato_assinado", "confirmado"];
+
+export const UNIDADE_MEDIDA: Record<Enums<"unidade_medida">, string> = {
+  kg: "kg",
+  g: "g",
+  litro: "litro",
+  ml: "ml",
+  unidade: "unidade",
+};
+
+export const CATEGORIA_INGREDIENTE: Record<Enums<"categoria_ingrediente">, string> = {
+  proteina: "Proteína",
+  bebida: "Bebida",
+  descartavel: "Descartável",
+  decoracao: "Decoração",
+  outro: "Outro",
+};
+
+export const CATEGORIA_ITEM_CARDAPIO: Record<Enums<"categoria_item_cardapio">, string> = {
+  entrada: "Entrada",
+  prato_principal: "Prato principal",
+  sobremesa: "Sobremesa",
+  bebida: "Bebida",
+};
+
+/**
+ * Custo, preço de venda e margem por convidado de um item de cardápio,
+ * a partir da ficha técnica (ingrediente × quantidade por convidado) e
+ * do markup configurado pela empresa. Recalculado no cliente sempre
+ * que a ficha técnica ou o preço de um ingrediente mudam — nunca
+ * fica armazenado no banco (evita ficar desatualizado).
+ */
+export function calcularCustoItemCardapio(
+  ficha: { quantidade_por_convidado: number; ingredientes: { preco_unidade: number } | null }[],
+  markupPadrao: number,
+) {
+  const custoConvidado = ficha.reduce(
+    (soma, f) => soma + f.quantidade_por_convidado * (f.ingredientes?.preco_unidade ?? 0),
+    0,
+  );
+  const precoVendaConvidado = custoConvidado * (1 + markupPadrao / 100);
+  const margem = precoVendaConvidado > 0 ? (precoVendaConvidado - custoConvidado) / precoVendaConvidado : 0;
+  return { custoConvidado, precoVendaConvidado, margem };
+}
+
+export function corMargem(margem: number, margemAlvo: number, margemMinima: number): "success" | "warning" | "destructive" {
+  const pct = margem * 100;
+  if (pct >= margemAlvo) return "success";
+  if (pct >= margemMinima) return "warning";
+  return "destructive";
+}
