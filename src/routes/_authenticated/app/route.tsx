@@ -62,7 +62,7 @@ function AppLayout() {
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon" className="print:hidden">
-        <SidebarHeader className="p-4">
+        <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-1">
           <Logo size="sm" variant="sidebar" />
         </SidebarHeader>
         <SidebarContent>
