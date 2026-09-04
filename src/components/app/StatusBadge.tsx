@@ -1,4 +1,4 @@
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import type { Enums } from "@/integrations/supabase/types";
 import { CLIENTE_STATUS, EVENTO_STATUS } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -20,14 +20,14 @@ export const badge = cva(
   },
 );
 
-const CLIENTE_TONE: Record<Enums<"cliente_status">, Parameters<typeof badge>[0]["tone"]> = {
+const CLIENTE_TONE: Record<Enums<"cliente_status">, NonNullable<VariantProps<typeof badge>["tone"]>> = {
   novo_lead: "info",
   em_negociacao: "warning",
   cliente_ativo: "success",
   perdido: "neutral",
 };
 
-export const EVENTO_TONE: Record<Enums<"evento_status">, Parameters<typeof badge>[0]["tone"]> = {
+export const EVENTO_TONE: Record<Enums<"evento_status">, NonNullable<VariantProps<typeof badge>["tone"]>> = {
   orcamento: "warning",
   contrato_assinado: "info",
   confirmado: "success",

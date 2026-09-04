@@ -19,13 +19,14 @@ export const Route = createFileRoute("/auth")({
       { property: "og:description", content: "Acesse ou cadastre sua empresa de eventos no Festeja." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({ tab: s.tab === "cadastro" ? "cadastro" : "login" }) as { tab: "login" | "cadastro" },
+  validateSearch: (s: Record<string, unknown>): { tab?: "login" | "cadastro" } =>
+    s["tab"] === "cadastro" ? { tab: "cadastro" } : {},
   component: AuthPage,
 });
 
 function AuthPage() {
   const { user, perfil, loading } = useAuth();
-  const { tab } = Route.useSearch();
+  const { tab = "login" } = Route.useSearch();
   const navigate = useNavigate();
 
   useEffect(() => {

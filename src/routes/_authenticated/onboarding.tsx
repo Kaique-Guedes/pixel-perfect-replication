@@ -25,7 +25,7 @@ function Onboarding() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setForm({ nome: meta.nome ?? "", empresa: meta.empresa_nome ?? "", cnpj: meta.cnpj ?? "" });
+    setForm({ nome: meta["nome"] ?? "", empresa: meta["empresa_nome"] ?? "", cnpj: meta["cnpj"] ?? "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
