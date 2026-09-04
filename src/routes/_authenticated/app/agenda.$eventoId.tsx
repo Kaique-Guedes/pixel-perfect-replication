@@ -321,7 +321,7 @@ function EventoDetalhePage() {
         title={evento.titulo}
         description={`${formatDate(evento.data, "EEEE, d 'de' MMMM")} · ${formatHora(evento.hora_inicio)}–${formatHora(evento.hora_fim)}${evento.local ? ` · ${evento.local}` : ""}${evento.clientes?.nome ? ` · ${evento.clientes.nome}` : ""}`}
         actions={
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <EventoStatusBadge status={evento.status} />
             <Button variant="outline" onClick={() => window.print()}>
               <FileDown /> Gerar PDF
@@ -363,7 +363,7 @@ function EventoDetalhePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Prato</TableHead>
-                    <TableHead>Categoria</TableHead>
+                    <TableHead className="hidden sm:table-cell">Categoria</TableHead>
                     <TableHead className="text-right">Valor / convidado</TableHead>
                     <TableHead className="text-right">Subtotal</TableHead>
                     {editavel && <TableHead className="w-10 print:hidden" />}
@@ -373,7 +373,7 @@ function EventoDetalhePage() {
                   {itensCalculados.map((i) => (
                     <TableRow key={i.vinculoId}>
                       <TableCell className="font-medium">{i.nome}</TableCell>
-                      <TableCell className="text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
                       <TableCell className="text-right">{formatCurrency(i.precoVendaConvidado)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(i.precoVendaConvidado * convidados)}</TableCell>
                       {editavel && (
@@ -414,7 +414,7 @@ function EventoDetalhePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tipo</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead className="text-right">Subtotal</TableHead>
                     {editavel && <TableHead className="w-10 print:hidden" />}
@@ -424,7 +424,7 @@ function EventoDetalhePage() {
                   {itensAvulsos.map((a) => (
                     <TableRow key={a.id}>
                       <TableCell className="font-medium">{a.descricao}</TableCell>
-                      <TableCell className="text-muted-foreground">{TIPO_ITEM_AVULSO[a.tipo]}</TableCell>
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">{TIPO_ITEM_AVULSO[a.tipo]}</TableCell>
                       <TableCell className="text-right">{formatCurrency(a.valor)}{a.tipo === "por_convidado" ? " /convidado" : ""}</TableCell>
                       <TableCell className="text-right">{formatCurrency(a.tipo === "por_convidado" ? a.valor * convidados : a.valor)}</TableCell>
                       {editavel && (
@@ -480,7 +480,7 @@ function EventoDetalhePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Descrição</TableHead>
+                    <TableHead className="hidden sm:table-cell">Descrição</TableHead>
                     <TableHead>Vencimento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Status</TableHead>
@@ -492,7 +492,7 @@ function EventoDetalhePage() {
                     const atrasada = parcelaAtrasada(p);
                     return (
                       <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.descricao || "—"}</TableCell>
+                        <TableCell className="hidden font-medium sm:table-cell">{p.descricao || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(p.data_vencimento)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(p.valor)}</TableCell>
                         <TableCell>
@@ -558,7 +558,7 @@ function EventoDetalhePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Fornecedor</TableHead>
+                    <TableHead className="hidden sm:table-cell">Fornecedor</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead className="w-10 print:hidden" />
@@ -568,7 +568,7 @@ function EventoDetalhePage() {
                   {despesas.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="font-medium">{d.descricao}</TableCell>
-                      <TableCell className="text-muted-foreground">{d.fornecedor || "—"}</TableCell>
+                      <TableCell className="hidden text-muted-foreground sm:table-cell">{d.fornecedor || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(d.data)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(d.valor)}</TableCell>
                       <TableCell className="print:hidden">

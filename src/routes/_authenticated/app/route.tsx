@@ -109,7 +109,7 @@ function AppLayout() {
         <header className="flex h-14 items-center gap-2 border-b px-4 print:hidden">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
-          <span className="text-sm text-muted-foreground">{empresa?.nome}</span>
+          <span className="truncate text-sm text-muted-foreground">{empresa?.nome}</span>
         </header>
         <main className="flex-1 p-4 md:p-8">
           <Outlet />

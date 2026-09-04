@@ -181,7 +181,7 @@ export function ItemCardapioDialog({
               {linhas.map((linha, idx) => {
                 const ing = ingredientes.find((i) => i.id === linha.ingrediente_id);
                 return (
-                  <div key={linha.key} className="flex items-center gap-2">
+                  <div key={linha.key} className="flex flex-wrap items-center gap-2">
                     <Select
                       value={linha.ingrediente_id || "_"}
                       onValueChange={(v) => {
@@ -190,7 +190,7 @@ export function ItemCardapioDialog({
                         setLinhas(next);
                       }}
                     >
-                      <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione o ingrediente" /></SelectTrigger>
+                      <SelectTrigger className="min-w-[160px] flex-1"><SelectValue placeholder="Selecione o ingrediente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_">Selecione…</SelectItem>
                         {ingredientes.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}
