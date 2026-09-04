@@ -63,7 +63,7 @@ function AppLayout() {
     <SidebarProvider>
       <Sidebar collapsible="icon" className="print:hidden">
         <SidebarHeader className="p-4">
-          <Logo size="sm" variant="sidebar" className="group-data-[collapsible=icon]:[&>span:last-child]:hidden" />
+          <Logo size="sm" variant="sidebar" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
