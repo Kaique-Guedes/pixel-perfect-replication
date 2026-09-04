@@ -26,7 +26,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const { user, perfil, loading } = useAuth();
-  const { tab } = Route.useSearch();
+  const { tab = "login" } = Route.useSearch();
   const navigate = useNavigate();
 
   useEffect(() => {
