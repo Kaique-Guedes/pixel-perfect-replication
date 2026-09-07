@@ -232,14 +232,27 @@ export function EventoDialog({
             <Textarea id="e-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
           </div>
 
+          <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+            Depois de salvar, você monta o orçamento do evento escolhendo os pratos do cardápio (com os ingredientes já cadastrados) e itens avulsos como decoração e som.
+          </p>
+
           <DialogFooter className="gap-2 sm:justify-between">
             {evento ? (
               <Button type="button" variant="ghost" className="text-destructive hover:text-destructive" disabled={remove.isPending} onClick={() => { if (confirm("Excluir este evento?")) remove.mutate(); }}>
                 <Trash2 /> Excluir
               </Button>
             ) : <span />}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              {evento && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => { onOpenChange(false); void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: evento.id } }); }}
+                >
+                  <Receipt /> Montar orçamento
+                </Button>
+              )}
               <Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando…" : "Salvar"}</Button>
             </div>
           </DialogFooter>
