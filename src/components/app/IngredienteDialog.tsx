@@ -97,7 +97,7 @@ export function IngredienteDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.nome.trim()) return toast.error("Informe o nome do ingrediente.");
+    if (!form.nome.trim()) { toast.error("Informe o nome do ingrediente."); return; }
     save.mutate();
   };
 

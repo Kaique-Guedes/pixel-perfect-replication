@@ -135,9 +135,9 @@ export function ItemCardapioDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!nome.trim()) return toast.error("Informe o nome do item.");
+    if (!nome.trim()) { toast.error("Informe o nome do item."); return; }
     if (!linhas.some((l) => l.ingrediente_id && l.quantidade_por_convidado > 0)) {
-      return toast.error("Adicione ao menos um ingrediente com quantidade por convidado.");
+      { toast.error("Adicione ao menos um ingrediente com quantidade por convidado."); return; }
     }
     save.mutate();
   };
@@ -181,7 +181,7 @@ export function ItemCardapioDialog({
               {linhas.map((linha, idx) => {
                 const ing = ingredientes.find((i) => i.id === linha.ingrediente_id);
                 return (
-                  <div key={linha.key} className="flex flex-wrap items-center gap-2">
+                  <div key={linha.key} className="flex items-center gap-2">
                     <Select
                       value={linha.ingrediente_id || "_"}
                       onValueChange={(v) => {
@@ -190,7 +190,7 @@ export function ItemCardapioDialog({
                         setLinhas(next);
                       }}
                     >
-                      <SelectTrigger className="min-w-[160px] flex-1"><SelectValue placeholder="Selecione o ingrediente" /></SelectTrigger>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione o ingrediente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_">Selecione…</SelectItem>
                         {ingredientes.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}

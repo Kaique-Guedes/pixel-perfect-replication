@@ -38,7 +38,7 @@ function AuthPage() {
     <div className="auth-backdrop grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Lado esquerdo — apresentação */}
       <aside className="hidden flex-col justify-between p-12 lg:flex">
-        <Logo size="lg" />
+        <Logo />
         <div className="max-w-md space-y-8">
           <h1 className="text-5xl leading-[1.05] font-medium text-foreground">
             Sua empresa de eventos, <em className="text-primary">fora das planilhas</em>.
@@ -136,7 +136,7 @@ function CadastroForm() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (form.senha.length < 6) return toast.error("A senha precisa ter pelo menos 6 caracteres.");
+    if (form.senha.length < 6) { toast.error("A senha precisa ter pelo menos 6 caracteres."); return; }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email: form.email,

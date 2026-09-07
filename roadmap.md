@@ -8,6 +8,10 @@
 - [x] 5. Orçamento do evento (itens de cardápio + avulsos), converter em contrato, PDF
 - [x] 6. Financeiro por evento (parcelas e despesas) + dashboard financeiro
 
+## Ajustes recentes
+- [x] Navegação mais rápida entre abas (cache + pré-carregamento)
+- [x] Orçamento acessível direto ao criar/editar evento
+
 ## Próximos
 - [ ] 7. Lista de compras automática com controle de estoque
 - [ ] 8. Checklist por evento (templates)

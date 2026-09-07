@@ -27,12 +27,12 @@ function RedefinirSenha() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (senha.length < 6) return toast.error("A senha precisa ter pelo menos 6 caracteres.");
-    if (senha !== confirma) return toast.error("As senhas não conferem.");
+    if (senha.length < 6) { toast.error("A senha precisa ter pelo menos 6 caracteres."); return; }
+    if (senha !== confirma) { toast.error("As senhas não conferem."); return; }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: senha });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Senha atualizada!");
     void navigate({ to: "/", replace: true });
   };

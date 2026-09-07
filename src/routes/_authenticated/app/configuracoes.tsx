@@ -22,8 +22,6 @@ function ConfiguracoesPage() {
   const [form, setForm] = useState({
     nome: "",
     cnpj: "",
-    telefone: "",
-    endereco: "",
     tipo_negocio: "buffet" as Enums<"tipo_negocio">,
     markup_padrao: 100,
     margem_alvo: 35,
@@ -35,8 +33,6 @@ function ConfiguracoesPage() {
     setForm({
       nome: empresa.nome,
       cnpj: empresa.cnpj ?? "",
-      telefone: empresa.telefone ?? "",
-      endereco: empresa.endereco ?? "",
       tipo_negocio: empresa.tipo_negocio ?? "buffet",
       markup_padrao: empresa.markup_padrao,
       margem_alvo: empresa.margem_alvo,
@@ -51,8 +47,6 @@ function ConfiguracoesPage() {
         .update({
           nome: form.nome.trim(),
           cnpj: form.cnpj.trim() || null,
-          telefone: form.telefone.trim() || null,
-          endereco: form.endereco.trim() || null,
           tipo_negocio: form.tipo_negocio,
           markup_padrao: Number(form.markup_padrao) || 0,
           margem_alvo: Number(form.margem_alvo) || 0,
@@ -70,8 +64,8 @@ function ConfiguracoesPage() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.nome.trim()) return toast.error("Informe o nome da empresa.");
-    if (form.margem_minima > form.margem_alvo) return toast.error("A margem mínima não pode ser maior que a margem alvo.");
+    if (!form.nome.trim()) { toast.error("Informe o nome da empresa."); return; }
+    if (form.margem_minima > form.margem_alvo) { toast.error("A margem mínima não pode ser maior que a margem alvo."); return; }
     save.mutate();
   };
 
@@ -91,17 +85,6 @@ function ConfiguracoesPage() {
             <div className="space-y-2">
               <Label htmlFor="cfg-cnpj">CNPJ</Label>
               <Input id="cfg-cnpj" value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} placeholder="Opcional" />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
-            <div className="space-y-2">
-              <Label htmlFor="cfg-telefone">Telefone</Label>
-              <Input id="cfg-telefone" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} placeholder="(31) 99999-9999" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cfg-endereco">Endereço</Label>
-              <Input id="cfg-endereco" value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} placeholder="Rua, número, bairro, cidade — UF" />
             </div>
           </div>
 

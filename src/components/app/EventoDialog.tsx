@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
@@ -32,17 +33,15 @@ export function EventoDialog({
   onOpenChange,
   evento,
   defaults,
-  onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   evento?: Evento | null;
   defaults?: Partial<typeof empty>;
-  /** Chamado após salvar com sucesso — id do evento e se foi uma criação (não edição). */
-  onSaved?: (info: { id: string; isNew: boolean }) => void;
 }) {
   const { empresa } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [form, setForm] = useState(empty);
 
   const { data: clientes = [] } = useQuery({
@@ -106,17 +105,24 @@ export function EventoDialog({
         status: form.status,
         observacoes: form.observacoes.trim() || null,
       };
-      const { data: salvo, error } = evento
-        ? await supabase.from("eventos").update(payload).eq("id", evento.id).select("id").single()
-        : await supabase.from("eventos").insert(payload).select("id").single();
+      if (evento) {
+        const { error } = await supabase.from("eventos").update(payload).eq("id", evento.id);
+        if (error) throw error;
+        return evento.id;
+      }
+      const { data, error } = await supabase.from("eventos").insert(payload).select("id").single();
       if (error) throw error;
-      return salvo.id;
+      return data.id;
     },
     onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ["eventos"] });
-      toast.success(evento ? "Evento atualizado." : "Evento criado.");
       onOpenChange(false);
-      onSaved?.({ id, isNew: !evento });
+      if (evento) {
+        toast.success("Evento atualizado.");
+      } else {
+        toast.success("Evento criado. Monte o orçamento com os itens do cardápio.");
+        void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
+      }
     },
     onError: (e: Error) => {
       if (e.message.includes("OVERBOOKING")) {
@@ -140,8 +146,8 @@ export function EventoDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.titulo.trim() || !form.data) return toast.error("Informe título e data.");
-    if (form.hora_fim <= form.hora_inicio) return toast.error("O horário de término deve ser após o início.");
+    if (!form.titulo.trim() || !form.data) { toast.error("Informe título e data."); return; }
+    if (form.hora_fim <= form.hora_inicio) { toast.error("O horário de término deve ser após o início."); return; }
     save.mutate();
   };
 
@@ -152,8 +158,8 @@ export function EventoDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>{evento ? "Editar evento" : "Novo evento / orçamento"}</DialogTitle>
-            <DialogDescription>Todo evento nasce como orçamento — depois de salvar, você monta o cardápio e o valor na tela do evento. Eventos confirmados ou com contrato assinado bloqueiam a agenda.</DialogDescription>
+            <DialogTitle>{evento ? "Editar evento" : "Novo evento"}</DialogTitle>
+            <DialogDescription>Eventos confirmados ou com contrato assinado bloqueiam a agenda.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
@@ -226,14 +232,27 @@ export function EventoDialog({
             <Textarea id="e-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
           </div>
 
+          <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+            Depois de salvar, você monta o orçamento do evento escolhendo os pratos do cardápio (com os ingredientes já cadastrados) e itens avulsos como decoração e som.
+          </p>
+
           <DialogFooter className="gap-2 sm:justify-between">
             {evento ? (
               <Button type="button" variant="ghost" className="text-destructive hover:text-destructive" disabled={remove.isPending} onClick={() => { if (confirm("Excluir este evento?")) remove.mutate(); }}>
                 <Trash2 /> Excluir
               </Button>
             ) : <span />}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              {evento && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => { onOpenChange(false); void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: evento.id } }); }}
+                >
+                  <Receipt /> Montar orçamento
+                </Button>
+              )}
               <Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando…" : "Salvar"}</Button>
             </div>
           </DialogFooter>
