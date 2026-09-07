@@ -389,7 +389,14 @@ function EventoDetalhePage() {
               </Table>
             )}
 
-            {editavel && (
+            {editavel && catalogo.length === 0 && (
+              <p className="mt-4 text-sm text-muted-foreground print:hidden">
+                Você ainda não tem pratos cadastrados.{" "}
+                <Link to="/app/cardapio" className="text-primary hover:underline">Cadastrar cardápio</Link> para poder montar o orçamento.
+              </p>
+            )}
+
+            {editavel && catalogo.length > 0 && (
               <div className="mt-4 flex gap-2 print:hidden">
                 <Select value={itemParaAdicionar || "_"} onValueChange={(v) => setItemParaAdicionar(v === "_" ? "" : v)}>
                   <SelectTrigger className="flex-1"><SelectValue placeholder="Escolha um item do cardápio" /></SelectTrigger>
