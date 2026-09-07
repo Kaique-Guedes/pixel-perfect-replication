@@ -45,6 +45,7 @@ export function EventoDialog({
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
+  const [selecionados, setSelecionados] = useState<string[]>([]);
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", "options"],
@@ -55,6 +56,33 @@ export function EventoDialog({
     },
     enabled: open,
   });
+
+  const { data: catalogo = [] } = useQuery({
+    queryKey: ["itens-cardapio", "orcamento"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("itens_cardapio")
+        .select("id, nome, categoria, itens_cardapio_ingredientes(quantidade_por_convidado, ingredientes(preco_unidade))")
+        .order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const { data: itensDoEvento } = useQuery({
+    queryKey: ["evento-cardapio-itens", evento?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_cardapio_itens")
+        .select("id, item_cardapio_id")
+        .eq("evento_id", evento!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!evento?.id,
+  });
+
 
   useEffect(() => {
     if (!open) return;
