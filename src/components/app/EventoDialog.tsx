@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -220,7 +220,6 @@ export function EventoDialog({
     e.preventDefault();
     if (!form.titulo.trim() || !form.data) { toast.error("Informe título e data."); return; }
     if (form.hora_fim <= form.hora_inicio) { toast.error("O horário de término deve ser após o início."); return; }
-    if (selecionados.length === 0) { toast.error("Selecione ao menos um item do cardápio para o orçamento."); return; }
     save.mutate();
   };
 
@@ -306,9 +305,31 @@ export function EventoDialog({
             <Textarea id="e-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
           </div>
 
-          <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
-            Depois de salvar, você monta o orçamento do evento escolhendo os pratos do cardápio (com os ingredientes já cadastrados) e itens avulsos como decoração e som.
-          </p>
+          <div className="space-y-2">
+            <Label>Cardápio do orçamento</Label>
+            {catalogoCalculado.length === 0 ? (
+              <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+                Nenhum item de cardápio cadastrado ainda. Cadastre em "Cardápio" para poder montar o orçamento aqui — ou salve o evento e monte depois na tela dele.
+              </p>
+            ) : (
+              <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border p-2">
+                {catalogoCalculado.map((c) => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded-md p-1.5 hover:bg-accent/50">
+                    <Checkbox checked={selecionados.includes(c.id)} onCheckedChange={() => toggleItem(c.id)} />
+                    <span className="flex-1 text-sm">{c.nome}</span>
+                    <span className="text-xs text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[c.categoria]}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(c.precoConvidado)}/convidado</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {selecionados.length > 0 && (
+              <p className="text-right text-sm text-muted-foreground">
+                Total do orçamento ({convidados} convidado{convidados === 1 ? "" : "s"}): <span className="font-medium text-foreground">{formatCurrency(totalOrcamento)}</span>
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">Itens avulsos (decoração, som etc.) e o restante do orçamento são ajustados na tela do evento depois de salvar.</p>
+          </div>
 
           <DialogFooter className="gap-2 sm:justify-between">
             {evento ? (
