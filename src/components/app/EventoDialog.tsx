@@ -1,18 +1,20 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA } from "@/lib/format";
+import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export type Evento = Tables<"eventos">;
 
