@@ -108,7 +108,7 @@ function AppLayout() {
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b px-4 print:hidden">
-          <SidebarTrigger />
+          <SidebarTrigger className="size-9 rounded-lg border bg-card shadow-sm" />
           <Separator orientation="vertical" className="h-5" />
           <span className="truncate text-sm text-muted-foreground">{empresa?.nome}</span>
         </header>

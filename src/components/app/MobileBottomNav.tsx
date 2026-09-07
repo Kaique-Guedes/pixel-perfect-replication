@@ -22,7 +22,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t bg-sidebar text-sidebar-foreground pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t bg-sidebar text-sidebar-foreground shadow-[0_-4px_16px_rgba(0,0,0,0.15)] pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden"
       aria-label="Navegação principal"
     >
       {ITENS.map((item) => {
@@ -31,23 +31,31 @@ export function MobileBottomNav() {
           <Link
             key={item.to}
             to={item.to}
-            className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium",
-              active ? "text-sidebar-primary" : "text-sidebar-foreground/70",
-            )}
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5"
           >
-            <item.icon className="size-5" />
-            {item.label}
+            <span
+              className={cn(
+                "flex items-center justify-center rounded-full px-4 py-1 transition-colors",
+                active && "bg-sidebar-primary/15",
+              )}
+            >
+              <item.icon className={cn("size-6", active ? "text-sidebar-primary" : "text-sidebar-foreground/60")} />
+            </span>
+            <span className={cn("text-[11px] leading-none", active ? "font-semibold text-sidebar-primary" : "font-medium text-sidebar-foreground/60")}>
+              {item.label}
+            </span>
           </Link>
         );
       })}
       <button
         type="button"
         onClick={() => setOpenMobile(true)}
-        className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-sidebar-foreground/70"
+        className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5"
       >
-        <Menu className="size-5" />
-        Mais
+        <span className="flex items-center justify-center rounded-full px-4 py-1">
+          <Menu className="size-6 text-sidebar-foreground/60" />
+        </span>
+        <span className="text-[11px] font-medium leading-none text-sidebar-foreground/60">Mais</span>
       </button>
     </nav>
   );
