@@ -103,6 +103,13 @@ export function EventoDialog({
     );
   }, [open, evento, defaults]);
 
+  useEffect(() => {
+    if (!open) return;
+    if (!evento) { setSelecionados([]); return; }
+    if (itensDoEvento) setSelecionados(itensDoEvento.map((i) => i.item_cardapio_id));
+  }, [open, evento, itensDoEvento]);
+
+
   // Aviso preventivo de conflito (a regra definitiva é aplicada no banco)
   const { data: conflito } = useQuery({
     queryKey: ["eventos", "conflito", form.data, form.hora_inicio, form.hora_fim, form.local, evento?.id],
