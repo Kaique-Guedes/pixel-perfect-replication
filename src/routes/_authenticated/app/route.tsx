@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, ChefHat, LayoutDashboard, LogOut, Settings, ShoppingBasket, Users, Wallet } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Logo } from "@/components/app/Logo";
+import { MobileBottomNav } from "@/components/app/MobileBottomNav";
 import {
   Sidebar,
   SidebarContent,
@@ -111,10 +112,11 @@ function AppLayout() {
           <Separator orientation="vertical" className="h-5" />
           <span className="truncate text-sm text-muted-foreground">{empresa?.nome}</span>
         </header>
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-4 pb-24 md:p-8">
           <Outlet />
         </main>
       </SidebarInset>
+      <MobileBottomNav />
     </SidebarProvider>
   );
 }
