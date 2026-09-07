@@ -31,7 +31,7 @@ function RecuperarSenha() {
       redirectTo: `${window.location.origin}/redefinir-senha`,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setSent(true);
   };
 

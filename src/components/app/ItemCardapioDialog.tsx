@@ -135,9 +135,9 @@ export function ItemCardapioDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!nome.trim()) return toast.error("Informe o nome do item.");
+    if (!nome.trim()) { toast.error("Informe o nome do item."); return; }
     if (!linhas.some((l) => l.ingrediente_id && l.quantidade_por_convidado > 0)) {
-      return toast.error("Adicione ao menos um ingrediente com quantidade por convidado.");
+      { toast.error("Adicione ao menos um ingrediente com quantidade por convidado."); return; }
     }
     save.mutate();
   };

@@ -289,20 +289,20 @@ function EventoDetalhePage() {
 
   const submitAvulso = (e: FormEvent) => {
     e.preventDefault();
-    if (!avulso.descricao.trim()) return toast.error("Descreva o item avulso.");
+    if (!avulso.descricao.trim()) { toast.error("Descreva o item avulso."); return; }
     addAvulso.mutate();
   };
 
   const submitParcela = (e: FormEvent) => {
     e.preventDefault();
-    if (!parcela.data_vencimento) return toast.error("Informe a data de vencimento.");
-    if (!parcela.valor || parcela.valor <= 0) return toast.error("Informe o valor da parcela.");
+    if (!parcela.data_vencimento) { toast.error("Informe a data de vencimento."); return; }
+    if (!parcela.valor || parcela.valor <= 0) { toast.error("Informe o valor da parcela."); return; }
     addParcela.mutate();
   };
 
   const submitDespesa = (e: FormEvent) => {
     e.preventDefault();
-    if (!despesa.descricao.trim()) return toast.error("Descreva a despesa.");
+    if (!despesa.descricao.trim()) { toast.error("Descreva a despesa."); return; }
     addDespesa.mutate();
   };
 

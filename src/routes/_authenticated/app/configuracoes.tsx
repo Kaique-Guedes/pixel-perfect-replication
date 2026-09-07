@@ -64,8 +64,8 @@ function ConfiguracoesPage() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.nome.trim()) return toast.error("Informe o nome da empresa.");
-    if (form.margem_minima > form.margem_alvo) return toast.error("A margem mínima não pode ser maior que a margem alvo.");
+    if (!form.nome.trim()) { toast.error("Informe o nome da empresa."); return; }
+    if (form.margem_minima > form.margem_alvo) { toast.error("A margem mínima não pode ser maior que a margem alvo."); return; }
     save.mutate();
   };
 

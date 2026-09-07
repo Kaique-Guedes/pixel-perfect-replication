@@ -77,7 +77,7 @@ export function ClienteDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.nome.trim()) return toast.error("Informe o nome do cliente.");
+    if (!form.nome.trim()) { toast.error("Informe o nome do cliente."); return; }
     mutation.mutate();
   };
 

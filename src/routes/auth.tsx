@@ -136,7 +136,7 @@ function CadastroForm() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (form.senha.length < 6) return toast.error("A senha precisa ter pelo menos 6 caracteres.");
+    if (form.senha.length < 6) { toast.error("A senha precisa ter pelo menos 6 caracteres."); return; }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email: form.email,

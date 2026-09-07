@@ -146,8 +146,8 @@ export function EventoDialog({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.titulo.trim() || !form.data) return toast.error("Informe título e data.");
-    if (form.hora_fim <= form.hora_inicio) return toast.error("O horário de término deve ser após o início.");
+    if (!form.titulo.trim() || !form.data) { toast.error("Informe título e data."); return; }
+    if (form.hora_fim <= form.hora_inicio) { toast.error("O horário de término deve ser após o início."); return; }
     save.mutate();
   };
 
