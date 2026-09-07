@@ -103,15 +103,24 @@ export function EventoDialog({
         status: form.status,
         observacoes: form.observacoes.trim() || null,
       };
-      const { error } = evento
-        ? await supabase.from("eventos").update(payload).eq("id", evento.id)
-        : await supabase.from("eventos").insert(payload);
+      if (evento) {
+        const { error } = await supabase.from("eventos").update(payload).eq("id", evento.id);
+        if (error) throw error;
+        return evento.id;
+      }
+      const { data, error } = await supabase.from("eventos").insert(payload).select("id").single();
       if (error) throw error;
+      return data.id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ["eventos"] });
-      toast.success(evento ? "Evento atualizado." : "Evento criado.");
       onOpenChange(false);
+      if (evento) {
+        toast.success("Evento atualizado.");
+      } else {
+        toast.success("Evento criado. Monte o orçamento com os itens do cardápio.");
+        void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
+      }
     },
     onError: (e: Error) => {
       if (e.message.includes("OVERBOOKING")) {
