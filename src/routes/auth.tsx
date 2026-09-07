@@ -38,7 +38,7 @@ function AuthPage() {
     <div className="auth-backdrop grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Lado esquerdo — apresentação */}
       <aside className="hidden flex-col justify-between p-12 lg:flex">
-        <Logo />
+        <Logo size="lg" />
         <div className="max-w-md space-y-8">
           <h1 className="text-5xl leading-[1.05] font-medium text-foreground">
             Sua empresa de eventos, <em className="text-primary">fora das planilhas</em>.

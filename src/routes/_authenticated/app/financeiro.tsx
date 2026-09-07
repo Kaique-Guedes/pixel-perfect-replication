@@ -78,7 +78,7 @@ function FinanceiroPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Evento</TableHead>
-                <TableHead>Descrição</TableHead>
+                <TableHead className="hidden sm:table-cell">Descrição</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
               </TableRow>
@@ -91,7 +91,7 @@ function FinanceiroPage() {
                       {p.eventos?.titulo ?? "—"}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{p.descricao || "—"}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{p.descricao || "—"}</TableCell>
                   <TableCell className="text-destructive">{formatDate(p.data_vencimento)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(p.valor)}</TableCell>
                 </TableRow>

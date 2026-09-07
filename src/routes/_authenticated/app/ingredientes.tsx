@@ -102,8 +102,8 @@ function IngredientesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Fornecedor</TableHead>
+                <TableHead className="hidden sm:table-cell">Categoria</TableHead>
+                <TableHead className="hidden md:table-cell">Fornecedor</TableHead>
                 <TableHead className="text-right">Preço / unidade</TableHead>
                 <TableHead className="text-right">Estoque atual</TableHead>
               </TableRow>
@@ -112,8 +112,8 @@ function IngredientesPage() {
               {filtrados.map((i) => (
                 <TableRow key={i.id} className="cursor-pointer" onClick={() => abrirEdicao(i)}>
                   <TableCell className="font-medium">{i.nome}</TableCell>
-                  <TableCell className="text-muted-foreground">{CATEGORIA_INGREDIENTE[i.categoria]}</TableCell>
-                  <TableCell className="text-muted-foreground">{i.fornecedor || "—"}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORIA_INGREDIENTE[i.categoria]}</TableCell>
+                  <TableCell className="hidden text-muted-foreground md:table-cell">{i.fornecedor || "—"}</TableCell>
                   <TableCell className="text-right">{formatCurrency(i.preco_unidade)} / {UNIDADE_MEDIDA[i.unidade]}</TableCell>
                   <TableCell className="text-right">
                     <span className={i.estoque_atual <= 0 ? "inline-flex items-center gap-1 text-destructive" : ""}>

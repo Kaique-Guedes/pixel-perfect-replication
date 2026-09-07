@@ -112,8 +112,8 @@ function CardapioPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Prato</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead className="text-right">Custo / convidado</TableHead>
+                <TableHead className="hidden sm:table-cell">Categoria</TableHead>
+                <TableHead className="hidden text-right md:table-cell">Custo / convidado</TableHead>
                 <TableHead className="text-right">Venda / convidado</TableHead>
                 <TableHead className="text-right">Margem</TableHead>
               </TableRow>
@@ -127,8 +127,8 @@ function CardapioPage() {
                 return (
                   <TableRow key={i.id} className="cursor-pointer" onClick={() => abrirEdicao(i)}>
                     <TableCell className="font-medium">{i.nome}</TableCell>
-                    <TableCell className="text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{formatCurrency(custoConvidado)}</TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
+                    <TableCell className="hidden text-right text-muted-foreground md:table-cell">{formatCurrency(custoConvidado)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(precoVendaConvidado)}</TableCell>
                     <TableCell className="text-right">
                       <MargemBadge margem={margem} margemAlvo={margemAlvo} margemMinima={margemMinima} />

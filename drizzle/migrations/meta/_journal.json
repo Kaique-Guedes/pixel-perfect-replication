@@ -36,6 +36,13 @@
       "when": 1788480890324,
       "tag": "0004_fase4_indices_complementares",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788490000000,
+      "tag": "0005_contato_empresa",
+      "breakpoints": true
     }
   ]
 }

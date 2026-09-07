@@ -113,9 +113,9 @@ function ClientesPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Contato</TableHead>
-                <TableHead>Origem</TableHead>
+                <TableHead className="hidden sm:table-cell">Origem</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Cadastrado em</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">Cadastrado em</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -125,9 +125,9 @@ function ClientesPage() {
                   <TableCell className="text-muted-foreground">
                     {c.telefone || c.email || "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{c.origem || "—"}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{c.origem || "—"}</TableCell>
                   <TableCell><ClienteStatusBadge status={c.status} /></TableCell>
-                  <TableCell className="text-right text-muted-foreground">{formatDate(c.created_at)}</TableCell>
+                  <TableCell className="hidden text-right text-muted-foreground sm:table-cell">{formatDate(c.created_at)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

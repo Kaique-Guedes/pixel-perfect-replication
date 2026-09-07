@@ -155,31 +155,37 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          endereco: string | null
           id: string
           margem_alvo: number
           margem_minima: number
           markup_padrao: number
           nome: string
+          telefone: string | null
           tipo_negocio: Database["public"]["Enums"]["tipo_negocio"] | null
         }
         Insert: {
           cnpj?: string | null
           created_at?: string
+          endereco?: string | null
           id?: string
           margem_alvo?: number
           margem_minima?: number
           markup_padrao?: number
           nome: string
+          telefone?: string | null
           tipo_negocio?: Database["public"]["Enums"]["tipo_negocio"] | null
         }
         Update: {
           cnpj?: string | null
           created_at?: string
+          endereco?: string | null
           id?: string
           margem_alvo?: number
           margem_minima?: number
           markup_padrao?: number
           nome?: string
+          telefone?: string | null
           tipo_negocio?: Database["public"]["Enums"]["tipo_negocio"] | null
         }
         Relationships: []
