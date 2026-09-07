@@ -1,18 +1,20 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA } from "@/lib/format";
+import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export type Evento = Tables<"eventos">;
 
@@ -43,6 +45,7 @@ export function EventoDialog({
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
+  const [selecionados, setSelecionados] = useState<string[]>([]);
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", "options"],
@@ -53,6 +56,33 @@ export function EventoDialog({
     },
     enabled: open,
   });
+
+  const { data: catalogo = [] } = useQuery({
+    queryKey: ["itens-cardapio", "orcamento"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("itens_cardapio")
+        .select("id, nome, categoria, itens_cardapio_ingredientes(quantidade_por_convidado, ingredientes(preco_unidade))")
+        .order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const { data: itensDoEvento } = useQuery({
+    queryKey: ["evento-cardapio-itens", evento?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_cardapio_itens")
+        .select("id, item_cardapio_id")
+        .eq("evento_id", evento!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!evento?.id,
+  });
+
 
   useEffect(() => {
     if (!open) return;
@@ -72,6 +102,13 @@ export function EventoDialog({
         : { ...empty, ...defaults },
     );
   }, [open, evento, defaults]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!evento) { setSelecionados([]); return; }
+    if (itensDoEvento) setSelecionados(itensDoEvento.map((i) => i.item_cardapio_id));
+  }, [open, evento, itensDoEvento]);
+
 
   // Aviso preventivo de conflito (a regra definitiva é aplicada no banco)
   const { data: conflito } = useQuery({
@@ -105,28 +142,45 @@ export function EventoDialog({
         status: form.status,
         observacoes: form.observacoes.trim() || null,
       };
+      let eventoId: string;
       if (evento) {
         const { error } = await supabase.from("eventos").update(payload).eq("id", evento.id);
         if (error) throw error;
-        return evento.id;
+        eventoId = evento.id;
+      } else {
+        const { data, error } = await supabase.from("eventos").insert(payload).select("id").single();
+        if (error) throw error;
+        eventoId = data.id;
       }
-      const { data, error } = await supabase.from("eventos").insert(payload).select("id").single();
-      if (error) throw error;
-      return data.id;
+
+      // Sincroniza o cardápio do orçamento
+      const atuais = itensDoEvento ?? [];
+      const remover = atuais.filter((a) => !selecionados.includes(a.item_cardapio_id)).map((a) => a.id);
+      const adicionar = selecionados.filter((id) => !atuais.some((a) => a.item_cardapio_id === id));
+      if (remover.length) {
+        const { error } = await supabase.from("evento_cardapio_itens").delete().in("id", remover);
+        if (error) throw error;
+      }
+      if (adicionar.length) {
+        const { error } = await supabase.from("evento_cardapio_itens").insert(
+          adicionar.map((item_cardapio_id) => ({ empresa_id: empresa!.id, evento_id: eventoId, item_cardapio_id })),
+        );
+        if (error) throw error;
+      }
+      return eventoId;
     },
     onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ["eventos"] });
+      void qc.invalidateQueries({ queryKey: ["evento-cardapio-itens"] });
       onOpenChange(false);
-      if (evento) {
-        toast.success("Evento atualizado.");
-      } else {
-        toast.success("Evento criado. Monte o orçamento com os itens do cardápio.");
-        void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
-      }
+      toast.success(evento ? "Evento e orçamento atualizados." : "Evento criado com o orçamento do cardápio.");
+      void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
     },
     onError: (e: Error) => {
       if (e.message.includes("OVERBOOKING")) {
         toast.error("Conflito de agenda", { description: e.message.replace("OVERBOOKING: ", "") });
+      } else if (e.message.includes("ORCAMENTO_TRAVADO")) {
+        toast.error("Orçamento travado", { description: "Este orçamento já virou contrato e não pode ter o cardápio alterado." });
       } else toast.error(e.message);
     },
   });
@@ -144,14 +198,34 @@ export function EventoDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const markup = empresa?.markup_padrao ?? 100;
+  const convidados = Number(form.convidados_estimados) || 0;
+
+  const catalogoCalculado = useMemo(
+    () =>
+      catalogo.map((c) => ({
+        ...c,
+        precoConvidado: calcularCustoItemCardapio(c.itens_cardapio_ingredientes, markup).precoVendaConvidado,
+      })),
+    [catalogo, markup],
+  );
+
+  const totalOrcamento =
+    catalogoCalculado.filter((c) => selecionados.includes(c.id)).reduce((s, c) => s + c.precoConvidado, 0) * convidados;
+
+  const toggleItem = (id: string) =>
+    setSelecionados((atual) => (atual.includes(id) ? atual.filter((i) => i !== id) : [...atual, id]));
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.titulo.trim() || !form.data) { toast.error("Informe título e data."); return; }
     if (form.hora_fim <= form.hora_inicio) { toast.error("O horário de término deve ser após o início."); return; }
+    if (selecionados.length === 0) { toast.error("Selecione ao menos um item do cardápio para o orçamento."); return; }
     save.mutate();
   };
 
   const bloqueia = STATUS_BLOQUEIA_AGENDA.includes(form.status);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
