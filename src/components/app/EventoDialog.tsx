@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -497,12 +497,14 @@ export function EventoDialog({
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               {evento && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => { void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: evento.id } }); onOpenChange(false); }}
-                >
-                  <Receipt /> Montar orçamento
+                <Button asChild variant="secondary">
+                  <Link
+                    to="/app/agenda/$eventoId"
+                    params={{ eventoId: evento.id }}
+                    onClick={() => onOpenChange(false)}
+                  >
+                    <Receipt /> Montar orçamento
+                  </Link>
                 </Button>
               )}
               <Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando…" : "Salvar"}</Button>
