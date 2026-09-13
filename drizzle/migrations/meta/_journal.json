@@ -92,6 +92,13 @@
       "when": 1789309617404,
       "tag": "0012_materiais_equipe",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789309642679,
+      "tag": "0013_equipes_estruturas",
+      "breakpoints": true
     }
   ]
 }
