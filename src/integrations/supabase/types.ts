@@ -190,6 +190,156 @@ export type Database = {
         }
         Relationships: []
       }
+      equipes: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes_funcionarios: {
+        Row: {
+          empresa_id: string
+          equipe_id: string
+          funcionario_id: string
+          horas: number
+          id: string
+        }
+        Insert: {
+          empresa_id: string
+          equipe_id: string
+          funcionario_id: string
+          horas: number
+          id?: string
+        }
+        Update: {
+          empresa_id?: string
+          equipe_id?: string
+          funcionario_id?: string
+          horas?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipes_funcionarios_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipes_funcionarios_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estruturas: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estruturas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estruturas_materiais: {
+        Row: {
+          empresa_id: string
+          estrutura_id: string
+          id: string
+          ingrediente_id: string
+          quantidade: number
+        }
+        Insert: {
+          empresa_id: string
+          estrutura_id: string
+          id?: string
+          ingrediente_id: string
+          quantidade: number
+        }
+        Update: {
+          empresa_id?: string
+          estrutura_id?: string
+          id?: string
+          ingrediente_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estruturas_materiais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estruturas_materiais_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estruturas_materiais_ingrediente_id_fkey"
+            columns: ["ingrediente_id"]
+            isOneToOne: false
+            referencedRelation: "ingredientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evento_cardapio_itens: {
         Row: {
           created_at: string

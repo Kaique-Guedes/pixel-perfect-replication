@@ -57,6 +57,13 @@
       "when": 1788510000000,
       "tag": "0007_materiais_equipe",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788520000000,
+      "tag": "0008_equipes_estruturas",
+      "breakpoints": true
     }
   ]
 }

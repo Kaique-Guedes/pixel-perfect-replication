@@ -97,6 +97,16 @@ export function calcularValorComMargem(custo: number, margemLucroPct: number) {
   return custo * (1 + margemLucroPct / 100);
 }
 
+/** Custo total de uma composição de equipe: soma de horas × valor/hora de cada funcionário. */
+export function calcularCustoEquipe(linhas: { horas: number; funcionarios: { valor_hora: number } | null }[]) {
+  return linhas.reduce((soma, l) => soma + l.horas * (l.funcionarios?.valor_hora ?? 0), 0);
+}
+
+/** Custo total de uma estrutura: soma de quantidade × preço unitário de cada material. */
+export function calcularCustoEstrutura(linhas: { quantidade: number; ingredientes: { preco_unidade: number } | null }[]) {
+  return linhas.reduce((soma, l) => soma + l.quantidade * (l.ingredientes?.preco_unidade ?? 0), 0);
+}
+
 export const TIPO_ITEM_AVULSO: Record<Enums<"tipo_item_avulso">, string> = {
   fixo: "Valor fixo",
   por_convidado: "Por convidado",
