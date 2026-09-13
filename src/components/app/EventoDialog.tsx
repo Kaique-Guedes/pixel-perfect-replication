@@ -258,9 +258,9 @@ export function EventoDialog({
       void qc.invalidateQueries({ queryKey: ["evento-cardapio-itens"] });
       void qc.invalidateQueries({ queryKey: ["evento-equipes"] });
       void qc.invalidateQueries({ queryKey: ["evento-estruturas"] });
-      onOpenChange(false);
       toast.success(evento ? "Evento e orçamento atualizados." : "Evento criado com o orçamento do cardápio.");
       void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
+      onOpenChange(false);
     },
     onError: (e: Error) => {
       if (e.message.includes("OVERBOOKING")) {
@@ -500,7 +500,7 @@ export function EventoDialog({
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => { onOpenChange(false); void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: evento.id } }); }}
+                  onClick={() => { void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: evento.id } }); onOpenChange(false); }}
                 >
                   <Receipt /> Montar orçamento
                 </Button>
