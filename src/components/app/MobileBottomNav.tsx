@@ -3,12 +3,17 @@ import { CalendarDays, LayoutDashboard, Menu, Users, Wallet } from "lucide-react
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-const ITENS = [
+const ITENS: ReadonlyArray<{
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+}> = [
   { to: "/app", label: "Painel", icon: LayoutDashboard, exact: true },
   { to: "/app/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/app/clientes", label: "Clientes", icon: Users },
   { to: "/app/financeiro", label: "Financeiro", icon: Wallet },
-] as const;
+];
 
 /**
  * Navegação inferior fixa, só no celular (sm:hidden). Os 4 itens mais
