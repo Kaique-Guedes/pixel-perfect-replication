@@ -71,6 +71,41 @@
       "when": 1788530000000,
       "tag": "0009_evento_equipe_estrutura",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789309565932,
+      "tag": "0010_contato_empresa",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789309578698,
+      "tag": "0011_margem_por_evento",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789309617404,
+      "tag": "0012_materiais_equipe",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789309642679,
+      "tag": "0013_equipes_estruturas",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789309700372,
+      "tag": "0014_evento_equipe_estrutura",
+      "breakpoints": true
     }
   ]
 }
