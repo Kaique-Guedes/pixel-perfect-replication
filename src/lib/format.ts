@@ -102,9 +102,9 @@ export function calcularCustoEquipe(linhas: { horas: number; funcionarios: { val
   return linhas.reduce((soma, l) => soma + l.horas * (l.funcionarios?.valor_hora ?? 0), 0);
 }
 
-/** Custo total de uma estrutura: soma de quantidade × preço unitário de cada material. */
-export function calcularCustoEstrutura(linhas: { quantidade: number; ingredientes: { preco_unidade: number } | null }[]) {
-  return linhas.reduce((soma, l) => soma + l.quantidade * (l.ingredientes?.preco_unidade ?? 0), 0);
+/** Custo por convidado de uma estrutura: soma de quantidade por convidado × preço unitário de cada material. */
+export function calcularCustoEstrutura(linhas: { quantidade_por_convidado: number; ingredientes: { preco_unidade: number } | null }[]) {
+  return linhas.reduce((soma, l) => soma + l.quantidade_por_convidado * (l.ingredientes?.preco_unidade ?? 0), 0);
 }
 
 export const TIPO_ITEM_AVULSO: Record<Enums<"tipo_item_avulso">, string> = {

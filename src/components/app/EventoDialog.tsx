@@ -6,7 +6,7 @@ import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoItemCardapio, calcularValorComMargem, formatCurrency } from "@/lib/format";
+import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoEquipe, calcularCustoEstrutura, calcularCustoItemCardapio, calcularValorComMargem, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,8 @@ export function EventoDialog({
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
   const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [equipesSelecionadas, setEquipesSelecionadas] = useState<string[]>([]);
+  const [estruturasSelecionadas, setEstruturasSelecionadas] = useState<string[]>([]);
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", "options"],
@@ -84,6 +86,52 @@ export function EventoDialog({
     enabled: open && !!evento?.id,
   });
 
+  const { data: equipesCatalogo = [] } = useQuery({
+    queryKey: ["equipes", "orcamento"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("equipes")
+        .select("id, nome, equipes_funcionarios(horas, funcionarios(valor_hora))")
+        .order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const { data: estruturasCatalogo = [] } = useQuery({
+    queryKey: ["estruturas", "orcamento"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("estruturas")
+        .select("id, nome, estruturas_materiais(quantidade_por_convidado, ingredientes(preco_unidade))")
+        .order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const { data: equipesDoEvento } = useQuery({
+    queryKey: ["evento-equipes", evento?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("evento_equipes").select("id, equipe_id").eq("evento_id", evento!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!evento?.id,
+  });
+
+  const { data: estruturasDoEvento } = useQuery({
+    queryKey: ["evento-estruturas", evento?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("evento_estruturas").select("id, estrutura_id").eq("evento_id", evento!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!evento?.id,
+  });
+
 
   useEffect(() => {
     if (!open) return;
@@ -107,9 +155,11 @@ export function EventoDialog({
 
   useEffect(() => {
     if (!open) return;
-    if (!evento) { setSelecionados([]); return; }
+    if (!evento) { setSelecionados([]); setEquipesSelecionadas([]); setEstruturasSelecionadas([]); return; }
     if (itensDoEvento) setSelecionados(itensDoEvento.map((i) => i.item_cardapio_id));
-  }, [open, evento, itensDoEvento]);
+    if (equipesDoEvento) setEquipesSelecionadas(equipesDoEvento.map((i) => i.equipe_id));
+    if (estruturasDoEvento) setEstruturasSelecionadas(estruturasDoEvento.map((i) => i.estrutura_id));
+  }, [open, evento, itensDoEvento, equipesDoEvento, estruturasDoEvento]);
 
 
   // Aviso preventivo de conflito (a regra definitiva é aplicada no banco)
@@ -170,11 +220,44 @@ export function EventoDialog({
         );
         if (error) throw error;
       }
+
+      // Sincroniza equipes do orçamento
+      const equipesAtuais = equipesDoEvento ?? [];
+      const equipesRemover = equipesAtuais.filter((a) => !equipesSelecionadas.includes(a.equipe_id)).map((a) => a.id);
+      const equipesAdicionar = equipesSelecionadas.filter((id) => !equipesAtuais.some((a) => a.equipe_id === id));
+      if (equipesRemover.length) {
+        const { error } = await supabase.from("evento_equipes").delete().in("id", equipesRemover);
+        if (error) throw error;
+      }
+      if (equipesAdicionar.length) {
+        const { error } = await supabase.from("evento_equipes").insert(
+          equipesAdicionar.map((equipe_id) => ({ empresa_id: empresa!.id, evento_id: eventoId, equipe_id })),
+        );
+        if (error) throw error;
+      }
+
+      // Sincroniza estruturas do orçamento
+      const estruturasAtuais = estruturasDoEvento ?? [];
+      const estruturasRemover = estruturasAtuais.filter((a) => !estruturasSelecionadas.includes(a.estrutura_id)).map((a) => a.id);
+      const estruturasAdicionar = estruturasSelecionadas.filter((id) => !estruturasAtuais.some((a) => a.estrutura_id === id));
+      if (estruturasRemover.length) {
+        const { error } = await supabase.from("evento_estruturas").delete().in("id", estruturasRemover);
+        if (error) throw error;
+      }
+      if (estruturasAdicionar.length) {
+        const { error } = await supabase.from("evento_estruturas").insert(
+          estruturasAdicionar.map((estrutura_id) => ({ empresa_id: empresa!.id, evento_id: eventoId, estrutura_id })),
+        );
+        if (error) throw error;
+      }
+
       return eventoId;
     },
     onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: ["eventos"] });
       void qc.invalidateQueries({ queryKey: ["evento-cardapio-itens"] });
+      void qc.invalidateQueries({ queryKey: ["evento-equipes"] });
+      void qc.invalidateQueries({ queryKey: ["evento-estruturas"] });
       onOpenChange(false);
       toast.success(evento ? "Evento e orçamento atualizados." : "Evento criado com o orçamento do cardápio.");
       void navigate({ to: "/app/agenda/$eventoId", params: { eventoId: id } });
@@ -214,10 +297,29 @@ export function EventoDialog({
 
   const custoCardapioTotal =
     catalogoCalculado.filter((c) => selecionados.includes(c.id)).reduce((s, c) => s + c.custoConvidado, 0) * convidados;
-  const totalOrcamento = calcularValorComMargem(custoCardapioTotal, Number(form.margem_lucro) || 0);
+
+  const equipesCalculadas = useMemo(
+    () => equipesCatalogo.map((e) => ({ ...e, custoTotal: calcularCustoEquipe(e.equipes_funcionarios) })),
+    [equipesCatalogo],
+  );
+  const custoEquipesTotal = equipesCalculadas.filter((e) => equipesSelecionadas.includes(e.id)).reduce((s, e) => s + e.custoTotal, 0);
+
+  const estruturasCalculadas = useMemo(
+    () => estruturasCatalogo.map((e) => ({ ...e, custoConvidado: calcularCustoEstrutura(e.estruturas_materiais) })),
+    [estruturasCatalogo],
+  );
+  const custoEstruturasTotal =
+    estruturasCalculadas.filter((e) => estruturasSelecionadas.includes(e.id)).reduce((s, e) => s + e.custoConvidado, 0) * convidados;
+
+  const custoTotalOrcamento = custoCardapioTotal + custoEquipesTotal + custoEstruturasTotal;
+  const totalOrcamento = calcularValorComMargem(custoTotalOrcamento, Number(form.margem_lucro) || 0);
 
   const toggleItem = (id: string) =>
     setSelecionados((atual) => (atual.includes(id) ? atual.filter((i) => i !== id) : [...atual, id]));
+  const toggleEquipe = (id: string) =>
+    setEquipesSelecionadas((atual) => (atual.includes(id) ? atual.filter((i) => i !== id) : [...atual, id]));
+  const toggleEstrutura = (id: string) =>
+    setEstruturasSelecionadas((atual) => (atual.includes(id) ? atual.filter((i) => i !== id) : [...atual, id]));
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -329,7 +431,41 @@ export function EventoDialog({
             <p className="text-xs text-muted-foreground">Materiais (mesa, cadeira etc.) e itens avulsos (decoração, som etc.) são ajustados na tela do evento depois de salvar — a margem abaixo se aplica sobre eles também.</p>
           </div>
 
-          {selecionados.length > 0 && (
+          <div className="space-y-2">
+            <Label>Equipe do orçamento</Label>
+            {equipesCalculadas.length === 0 ? (
+              <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">Nenhuma equipe cadastrada ainda. Cadastre em "Cardápio → Equipe".</p>
+            ) : (
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border p-2">
+                {equipesCalculadas.map((e) => (
+                  <label key={e.id} className="flex cursor-pointer items-center gap-2 rounded-md p-1.5 hover:bg-accent/50">
+                    <Checkbox checked={equipesSelecionadas.includes(e.id)} onCheckedChange={() => toggleEquipe(e.id)} />
+                    <span className="flex-1 text-sm">{e.nome}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(e.custoTotal)} (fixo)</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Estrutura do orçamento</Label>
+            {estruturasCalculadas.length === 0 ? (
+              <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">Nenhuma estrutura cadastrada ainda. Cadastre em "Cardápio → Estruturas".</p>
+            ) : (
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border p-2">
+                {estruturasCalculadas.map((e) => (
+                  <label key={e.id} className="flex cursor-pointer items-center gap-2 rounded-md p-1.5 hover:bg-accent/50">
+                    <Checkbox checked={estruturasSelecionadas.includes(e.id)} onCheckedChange={() => toggleEstrutura(e.id)} />
+                    <span className="flex-1 text-sm">{e.nome}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(e.custoConvidado)}/convidado</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {(selecionados.length > 0 || equipesSelecionadas.length > 0 || estruturasSelecionadas.length > 0) && (
             <div className="space-y-2 rounded-lg bg-accent/50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="e-margem" className="text-sm">Margem de lucro desejada (%)</Label>
@@ -344,7 +480,7 @@ export function EventoDialog({
                 />
               </div>
               <p className="text-right text-sm text-muted-foreground">
-                Custo do cardápio ({convidados} convidado{convidados === 1 ? "" : "s"}): {formatCurrency(custoCardapioTotal)}
+                Custo total ({convidados} convidado{convidados === 1 ? "" : "s"}): {formatCurrency(custoTotalOrcamento)}
               </p>
               <p className="text-right text-sm">
                 Total do orçamento (com margem): <span className="font-medium text-foreground">{formatCurrency(totalOrcamento)}</span>

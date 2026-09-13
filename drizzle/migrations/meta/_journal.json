@@ -64,6 +64,13 @@
       "when": 1788520000000,
       "tag": "0008_equipes_estruturas",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788530000000,
+      "tag": "0009_evento_equipe_estrutura",
+      "breakpoints": true
     }
   ]
 }

@@ -256,7 +256,7 @@ function AbaEstruturas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("estruturas")
-        .select("*, estruturas_materiais(quantidade, ingredientes(preco_unidade))")
+        .select("*, estruturas_materiais(quantidade_por_convidado, ingredientes(preco_unidade))")
         .order("nome");
       if (error) throw error;
       return data;
@@ -310,7 +310,7 @@ function AbaEstruturas() {
               <TableRow>
                 <TableHead>Estrutura</TableHead>
                 <TableHead className="hidden sm:table-cell">Materiais</TableHead>
-                <TableHead className="text-right">Custo total</TableHead>
+                <TableHead className="text-right">Custo / convidado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -300,21 +300,21 @@ export type Database = {
           estrutura_id: string
           id: string
           ingrediente_id: string
-          quantidade: number
+          quantidade_por_convidado: number
         }
         Insert: {
           empresa_id: string
           estrutura_id: string
           id?: string
           ingrediente_id: string
-          quantidade: number
+          quantidade_por_convidado: number
         }
         Update: {
           empresa_id?: string
           estrutura_id?: string
           id?: string
           ingrediente_id?: string
-          quantidade?: number
+          quantidade_por_convidado?: number
         }
         Relationships: [
           {
@@ -382,6 +382,98 @@ export type Database = {
             columns: ["item_cardapio_id"]
             isOneToOne: false
             referencedRelation: "itens_cardapio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evento_equipes: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          equipe_id: string
+          evento_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          equipe_id: string
+          evento_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          equipe_id?: string
+          evento_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_equipes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_equipes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_equipes_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evento_estruturas: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          estrutura_id: string
+          evento_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          estrutura_id: string
+          evento_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          estrutura_id?: string
+          evento_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_estruturas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_estruturas_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_estruturas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
         ]

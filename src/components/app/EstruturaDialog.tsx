@@ -13,10 +13,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Estrutura = Tables<"estruturas">;
-type Linha = { key: string; ingrediente_id: string; quantidade: number };
+type Linha = { key: string; ingrediente_id: string; quantidade_por_convidado: number };
 
 let seq = 0;
-const novaLinha = (): Linha => ({ key: `novo-${++seq}`, ingrediente_id: "", quantidade: 0 });
+const novaLinha = (): Linha => ({ key: `novo-${++seq}`, ingrediente_id: "", quantidade_por_convidado: 0 });
 
 export function EstruturaDialog({
   open,
@@ -47,7 +47,7 @@ export function EstruturaDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("estruturas_materiais")
-        .select("ingrediente_id, quantidade")
+        .select("ingrediente_id, quantidade_por_convidado")
         .eq("estrutura_id", estrutura!.id);
       if (error) throw error;
       return data;
@@ -61,7 +61,7 @@ export function EstruturaDialog({
       setNome(estrutura.nome);
       setLinhas(
         composicaoAtual && composicaoAtual.length > 0
-          ? composicaoAtual.map((c) => ({ key: `${c.ingrediente_id}-${Math.random()}`, ingrediente_id: c.ingrediente_id, quantidade: c.quantidade }))
+          ? composicaoAtual.map((c) => ({ key: `${c.ingrediente_id}-${Math.random()}`, ingrediente_id: c.ingrediente_id, quantidade_por_convidado: c.quantidade_por_convidado }))
           : [novaLinha()],
       );
     } else {
@@ -72,8 +72,8 @@ export function EstruturaDialog({
 
   const composicao = linhas
     .filter((l) => l.ingrediente_id)
-    .map((l) => ({ quantidade: l.quantidade, ingredientes: materiais.find((m) => m.id === l.ingrediente_id) ?? null }));
-  const custoTotal = calcularCustoEstrutura(composicao);
+    .map((l) => ({ quantidade_por_convidado: l.quantidade_por_convidado, ingredientes: materiais.find((m) => m.id === l.ingrediente_id) ?? null }));
+  const custoPorConvidado = calcularCustoEstrutura(composicao);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -87,14 +87,14 @@ export function EstruturaDialog({
       const { error: delError } = await supabase.from("estruturas_materiais").delete().eq("estrutura_id", estruturaId);
       if (delError) throw delError;
 
-      const validas = linhas.filter((l) => l.ingrediente_id && l.quantidade > 0);
+      const validas = linhas.filter((l) => l.ingrediente_id && l.quantidade_por_convidado > 0);
       if (validas.length > 0) {
         const { error: insError } = await supabase.from("estruturas_materiais").insert(
           validas.map((l) => ({
             empresa_id: empresa!.id,
             estrutura_id: estruturaId,
             ingrediente_id: l.ingrediente_id,
-            quantidade: l.quantidade,
+            quantidade_por_convidado: l.quantidade_por_convidado,
           })),
         );
         if (insError) throw insError;
@@ -125,7 +125,7 @@ export function EstruturaDialog({
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!nome.trim()) { toast.error("Dê um nome à estrutura."); return; }
-    if (!linhas.some((l) => l.ingrediente_id && l.quantidade > 0)) {
+    if (!linhas.some((l) => l.ingrediente_id && l.quantidade_por_convidado > 0)) {
       toast.error("Adicione ao menos um material com quantidade.");
       return;
     }
@@ -138,12 +138,12 @@ export function EstruturaDialog({
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{estrutura ? "Editar estrutura" : "Nova estrutura"}</DialogTitle>
-            <DialogDescription>Ex.: "Estrutura 100 convidados". O custo é calculado por quantidade × preço de cada material.</DialogDescription>
+            <DialogDescription>Ex.: "Estrutura padrão". Quantidade é por convidado (ex.: 1 cadeira por convidado) — o custo escala com o nº de convidados do evento.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
             <Label htmlFor="es-nome">Nome da estrutura</Label>
-            <Input id="es-nome" required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Estrutura 100 convidados" />
+            <Input id="es-nome" required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Estrutura padrão" />
           </div>
 
           <div className="space-y-2">
@@ -176,16 +176,16 @@ export function EstruturaDialog({
                     <Input
                       type="number"
                       min={0}
-                      step="1"
+                      step="0.01"
                       className="w-24"
-                      value={linha.quantidade}
+                      value={linha.quantidade_por_convidado}
                       onChange={(e) => {
                         const next = [...linhas];
-                        next[idx] = { ...linha, quantidade: Number(e.target.value) };
+                        next[idx] = { ...linha, quantidade_por_convidado: Number(e.target.value) };
                         setLinhas(next);
                       }}
                     />
-                    <span className="w-14 shrink-0 text-xs text-muted-foreground">{mat ? UNIDADE_MEDIDA[mat.unidade] : ""}</span>
+                    <span className="w-24 shrink-0 text-xs text-muted-foreground">{mat ? `${UNIDADE_MEDIDA[mat.unidade]}/convidado` : ""}</span>
                     <Button type="button" variant="ghost" size="icon" onClick={() => setLinhas(linhas.filter((l) => l.key !== linha.key))}>
                       <X className="size-4" />
                     </Button>
@@ -196,8 +196,8 @@ export function EstruturaDialog({
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-accent/50 p-4 text-sm">
-            <span className="text-muted-foreground">Custo total da estrutura</span>
-            <span className="font-medium text-foreground">{formatCurrency(custoTotal)}</span>
+            <span className="text-muted-foreground">Custo por convidado</span>
+            <span className="font-medium text-foreground">{formatCurrency(custoPorConvidado)}</span>
           </div>
 
           <DialogFooter className="gap-2 sm:justify-between">

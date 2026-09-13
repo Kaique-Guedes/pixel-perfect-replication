@@ -11,6 +11,8 @@ import {
   STATUS_PARCELA,
   TIPO_ITEM_AVULSO,
   UNIDADE_MEDIDA,
+  calcularCustoEquipe,
+  calcularCustoEstrutura,
   calcularCustoItemCardapio,
   calcularValorComMargem,
   formatCurrency,
@@ -40,6 +42,8 @@ function EventoDetalhePage() {
 
   const [itemParaAdicionar, setItemParaAdicionar] = useState("");
   const [material, setMaterial] = useState({ ingrediente_id: "", quantidade_por_convidado: 1 });
+  const [equipeParaAdicionar, setEquipeParaAdicionar] = useState("");
+  const [estruturaParaAdicionar, setEstruturaParaAdicionar] = useState("");
   const [avulso, setAvulso] = useState<{ descricao: string; tipo: Enums<"tipo_item_avulso">; valor: number }>({
     descricao: "",
     tipo: "fixo",
@@ -113,6 +117,48 @@ function EventoDetalhePage() {
     },
   });
 
+  const { data: equipesEvento = [] } = useQuery({
+    queryKey: ["evento-equipes", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_equipes")
+        .select("id, equipe_id, equipes(nome, equipes_funcionarios(horas, funcionarios(nome, funcao, valor_hora)))")
+        .eq("evento_id", eventoId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: catalogoEquipes = [] } = useQuery({
+    queryKey: ["equipes"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("equipes").select("id, nome").order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: estruturasEvento = [] } = useQuery({
+    queryKey: ["evento-estruturas", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_estruturas")
+        .select("id, estrutura_id, estruturas(nome, estruturas_materiais(quantidade_por_convidado, ingredientes(nome, preco_unidade)))")
+        .eq("evento_id", eventoId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: catalogoEstruturas = [] } = useQuery({
+    queryKey: ["estruturas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("estruturas").select("id, nome").order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: parcelas = [] } = useQuery({
     queryKey: ["parcelas", eventoId],
     queryFn: async () => {
@@ -153,7 +199,17 @@ function EventoDetalhePage() {
   const custoCardapioTotal = itensCalculados.reduce((s, i) => s + i.custoConvidado, 0) * convidados;
   const custoAvulsosTotal = itensAvulsos.reduce((s, a) => s + (a.tipo === "por_convidado" ? a.valor * convidados : a.valor), 0);
   const custoMateriaisTotal = materiaisEvento.reduce((s, m) => s + m.quantidade_por_convidado * (m.ingredientes?.preco_unidade ?? 0), 0) * convidados;
-  const custoTotalOrcamento = custoCardapioTotal + custoAvulsosTotal + custoMateriaisTotal;
+  const equipesCalculadas = useMemo(
+    () => equipesEvento.filter((e) => e.equipes).map((e) => ({ vinculoId: e.id, id: e.equipe_id, nome: e.equipes!.nome, custoTotal: calcularCustoEquipe(e.equipes!.equipes_funcionarios) })),
+    [equipesEvento],
+  );
+  const custoEquipesTotal = equipesCalculadas.reduce((s, e) => s + e.custoTotal, 0);
+  const estruturasCalculadas = useMemo(
+    () => estruturasEvento.filter((e) => e.estruturas).map((e) => ({ vinculoId: e.id, id: e.estrutura_id, nome: e.estruturas!.nome, custoConvidado: calcularCustoEstrutura(e.estruturas!.estruturas_materiais) })),
+    [estruturasEvento],
+  );
+  const custoEstruturasTotal = estruturasCalculadas.reduce((s, e) => s + e.custoConvidado, 0) * convidados;
+  const custoTotalOrcamento = custoCardapioTotal + custoAvulsosTotal + custoMateriaisTotal + custoEquipesTotal + custoEstruturasTotal;
   const total = calcularValorComMargem(custoTotalOrcamento, margemLucro);
   const valorPorConvidado = convidados > 0 ? total / convidados : 0;
 
@@ -165,11 +221,43 @@ function EventoDetalhePage() {
 
   const itensDisponiveis = catalogo.filter((c) => !itensCalculados.some((i) => i.id === c.id));
   const materiaisDisponiveis = catalogoMateriais.filter((m) => !materiaisEvento.some((me) => me.ingrediente_id === m.id));
+  const equipesDisponiveis = catalogoEquipes.filter((e) => !equipesCalculadas.some((ec) => ec.id === e.id));
+  const estruturasDisponiveis = catalogoEstruturas.filter((e) => !estruturasCalculadas.some((ec) => ec.id === e.id));
+
+  // --- Dados formatados para o PDF do orçamento (sem custos internos) ---
+  const pratosPorCategoria = useMemo(() => {
+    const grupos = new Map<string, string[]>();
+    for (const i of itensCalculados) {
+      const lista = grupos.get(i.categoria) ?? [];
+      lista.push(i.nome);
+      grupos.set(i.categoria, lista);
+    }
+    return Array.from(grupos.entries());
+  }, [itensCalculados]);
+
+  const materiaisParaImpressao = useMemo(() => {
+    const nomes = new Set<string>();
+    for (const m of materiaisEvento) if (m.ingredientes?.nome) nomes.add(m.ingredientes.nome);
+    for (const e of estruturasEvento) for (const m of e.estruturas?.estruturas_materiais ?? []) if (m.ingredientes?.nome) nomes.add(m.ingredientes.nome);
+    return Array.from(nomes);
+  }, [materiaisEvento, estruturasEvento]);
+
+  const equipeParaImpressao = useMemo(() => {
+    const contagem = new Map<string, number>();
+    for (const e of equipesEvento) for (const ef of e.equipes?.equipes_funcionarios ?? []) {
+      const funcao = ef.funcionarios?.funcao;
+      if (!funcao) continue;
+      contagem.set(funcao, (contagem.get(funcao) ?? 0) + 1);
+    }
+    return Array.from(contagem.entries());
+  }, [equipesEvento]);
 
   const invalidarTudo = () => {
     void qc.invalidateQueries({ queryKey: ["evento-cardapio-itens", eventoId] });
     void qc.invalidateQueries({ queryKey: ["orcamento-itens-avulsos", eventoId] });
     void qc.invalidateQueries({ queryKey: ["evento-materiais", eventoId] });
+    void qc.invalidateQueries({ queryKey: ["evento-equipes", eventoId] });
+    void qc.invalidateQueries({ queryKey: ["evento-estruturas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["parcelas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["despesas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["eventos", eventoId] });
@@ -255,6 +343,56 @@ function EventoDetalhePage() {
   const removeMaterial = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("evento_materiais").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidarTudo,
+    onError: erroTravado,
+  });
+
+  const addEquipe = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("evento_equipes").insert({
+        empresa_id: empresa!.id,
+        evento_id: eventoId,
+        equipe_id: equipeParaAdicionar,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEquipeParaAdicionar("");
+      invalidarTudo();
+    },
+    onError: erroTravado,
+  });
+
+  const removeEquipe = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("evento_equipes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidarTudo,
+    onError: erroTravado,
+  });
+
+  const addEstrutura = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("evento_estruturas").insert({
+        empresa_id: empresa!.id,
+        evento_id: eventoId,
+        estrutura_id: estruturaParaAdicionar,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEstruturaParaAdicionar("");
+      invalidarTudo();
+    },
+    onError: erroTravado,
+  });
+
+  const removeEstrutura = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("evento_estruturas").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: invalidarTudo,
@@ -386,31 +524,33 @@ function EventoDetalhePage() {
         </Link>
       </div>
 
-      <PageHeader
-        title={evento.titulo}
-        description={`${formatDate(evento.data, "EEEE, d 'de' MMMM")} · ${formatHora(evento.hora_inicio)}–${formatHora(evento.hora_fim)}${evento.local ? ` · ${evento.local}` : ""}${evento.clientes?.nome ? ` · ${evento.clientes.nome}` : ""}`}
-        actions={
-          <div className="flex flex-wrap items-center gap-2 print:hidden">
-            <EventoStatusBadge status={evento.status} />
-            <Button variant="outline" onClick={() => window.print()}>
-              <FileDown /> Gerar PDF
-            </Button>
-            {editavel ? (
-              <Button onClick={() => mudarStatus.mutate("contrato_assinado")} disabled={mudarStatus.isPending}>
-                <Lock /> Converter em contrato
+      <div className="print:hidden">
+        <PageHeader
+          title={evento.titulo}
+          description={`${formatDate(evento.data, "EEEE, d 'de' MMMM")} · ${formatHora(evento.hora_inicio)}–${formatHora(evento.hora_fim)}${evento.local ? ` · ${evento.local}` : ""}${evento.clientes?.nome ? ` · ${evento.clientes.nome}` : ""}`}
+          actions={
+            <div className="flex flex-wrap items-center gap-2 print:hidden">
+              <EventoStatusBadge status={evento.status} />
+              <Button variant="outline" onClick={() => window.print()}>
+                <FileDown /> Gerar PDF
               </Button>
-            ) : isAdmin ? (
-              <Button
-                variant="outline"
-                onClick={() => { if (confirm("Reabrir este orçamento para edição?")) mudarStatus.mutate("orcamento"); }}
-                disabled={mudarStatus.isPending}
-              >
-                <Unlock /> Reabrir orçamento
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
+              {editavel ? (
+                <Button onClick={() => mudarStatus.mutate("contrato_assinado")} disabled={mudarStatus.isPending}>
+                  <Lock /> Converter em contrato
+                </Button>
+              ) : isAdmin ? (
+                <Button
+                  variant="outline"
+                  onClick={() => { if (confirm("Reabrir este orçamento para edição?")) mudarStatus.mutate("orcamento"); }}
+                  disabled={mudarStatus.isPending}
+                >
+                  <Unlock /> Reabrir orçamento
+                </Button>
+              ) : null}
+            </div>
+          }
+        />
+      </div>
 
       {!editavel && (
         <div className="mb-6 flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/15 p-3 text-sm text-warning-foreground print:hidden">
@@ -421,7 +561,69 @@ function EventoDetalhePage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Documento de orçamento para o cliente — só aparece ao gerar PDF/imprimir.
+          Propositalmente não mostra nenhum custo interno (ficha técnica, margem,
+          financeiro): só o que está incluso e o valor final por convidado. */}
+      <div className="hidden print:block">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold uppercase tracking-wide">{empresa?.nome}</h1>
+          <p className="mt-1 text-base font-semibold uppercase text-muted-foreground">Orçamento — {evento.titulo}</p>
+        </div>
+
+        <table className="mb-6 text-sm">
+          <tbody>
+            <tr><td className="pr-3 font-semibold">Cliente</td><td>{evento.clientes?.nome ?? "—"}</td></tr>
+            <tr><td className="pr-3 font-semibold">Data</td><td>{formatDate(evento.data, "dd/MM/yyyy")}</td></tr>
+            <tr><td className="pr-3 font-semibold">Local</td><td>{evento.local || "—"}</td></tr>
+            <tr><td className="pr-3 font-semibold">Convidados</td><td>{convidados} pessoas</td></tr>
+          </tbody>
+        </table>
+
+        {pratosPorCategoria.length > 0 && (
+          <div className="mb-5">
+            <h2 className="mb-2 text-sm font-bold uppercase">Cardápio</h2>
+            {pratosPorCategoria.map(([categoria, nomes]) => (
+              <div key={categoria} className="mb-2">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[categoria as Enums<"categoria_item_cardapio">]}</p>
+                <ul className="text-sm">
+                  {nomes.map((nome) => <li key={nome}>• {nome}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {materiaisParaImpressao.length > 0 && (
+          <div className="mb-5">
+            <h2 className="mb-2 text-sm font-bold uppercase">Estrutura e materiais inclusos</h2>
+            <ul className="text-sm">
+              {materiaisParaImpressao.map((nome) => <li key={nome}>• {nome}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {equipeParaImpressao.length > 0 && (
+          <div className="mb-5">
+            <h2 className="mb-2 text-sm font-bold uppercase">Equipe</h2>
+            <ul className="text-sm">
+              {equipeParaImpressao.map(([funcao, qtd]) => <li key={funcao}>• {qtd} {funcao}</li>)}
+            </ul>
+          </div>
+        )}
+
+        <div className="mb-6 border-t pt-4">
+          <h2 className="mb-2 text-sm font-bold uppercase">Investimento</h2>
+          <p className="text-base">Valor por convidado: <span className="font-bold">{formatCurrency(valorPorConvidado)}</span></p>
+        </div>
+
+        <div className="border-t pt-4 text-center text-xs text-muted-foreground">
+          <p className="font-semibold">{empresa?.nome}</p>
+          {empresa?.endereco && <p>{empresa.endereco}</p>}
+          {empresa?.telefone && <p>{empresa.telefone}</p>}
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3 print:hidden">
         <div className="space-y-6 lg:col-span-2">
           <section className="surface-card p-5">
             <h2 className="mb-4 text-lg font-medium">Cardápio do evento</h2>
@@ -543,6 +745,92 @@ function EventoDetalhePage() {
                   onChange={(e) => setMaterial({ ...material, quantidade_por_convidado: Number(e.target.value) })}
                 />
                 <Button type="button" disabled={!material.ingrediente_id || addMaterial.isPending} onClick={() => addMaterial.mutate()}>
+                  <Plus /> Adicionar
+                </Button>
+              </div>
+            )}
+          </section>
+
+          <section className="surface-card p-5">
+            <h2 className="mb-4 text-lg font-medium">Equipe do evento</h2>
+            {equipesCalculadas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma equipe adicionada ainda.</p>
+            ) : (
+              <ul className="divide-y">
+                {equipesCalculadas.map((e) => (
+                  <li key={e.vinculoId} className="flex items-center gap-3 py-2.5">
+                    <span className="flex-1 text-sm font-medium">{e.nome}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(e.custoTotal)}</span>
+                    {editavel && (
+                      <Button variant="ghost" size="icon" onClick={() => removeEquipe.mutate(e.vinculoId)} disabled={removeEquipe.isPending}>
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {editavel && catalogoEquipes.length === 0 && (
+              <p className="mt-4 text-sm text-muted-foreground print:hidden">
+                Você ainda não tem equipes cadastradas.{" "}
+                <Link to="/app/cardapio" className="text-primary hover:underline">Cadastrar equipe</Link> para poder adicionar aqui.
+              </p>
+            )}
+
+            {editavel && catalogoEquipes.length > 0 && (
+              <div className="mt-4 flex gap-2 print:hidden">
+                <Select value={equipeParaAdicionar || "_"} onValueChange={(v) => setEquipeParaAdicionar(v === "_" ? "" : v)}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Escolha uma equipe" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_">Selecione…</SelectItem>
+                    {equipesDisponiveis.map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button type="button" disabled={!equipeParaAdicionar || addEquipe.isPending} onClick={() => addEquipe.mutate()}>
+                  <Plus /> Adicionar
+                </Button>
+              </div>
+            )}
+          </section>
+
+          <section className="surface-card p-5">
+            <h2 className="mb-4 text-lg font-medium">Estrutura do evento</h2>
+            {estruturasCalculadas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma estrutura adicionada ainda.</p>
+            ) : (
+              <ul className="divide-y">
+                {estruturasCalculadas.map((e) => (
+                  <li key={e.vinculoId} className="flex items-center gap-3 py-2.5">
+                    <span className="flex-1 text-sm font-medium">{e.nome}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(e.custoConvidado * convidados)}</span>
+                    {editavel && (
+                      <Button variant="ghost" size="icon" onClick={() => removeEstrutura.mutate(e.vinculoId)} disabled={removeEstrutura.isPending}>
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {editavel && catalogoEstruturas.length === 0 && (
+              <p className="mt-4 text-sm text-muted-foreground print:hidden">
+                Você ainda não tem estruturas cadastradas.{" "}
+                <Link to="/app/cardapio" className="text-primary hover:underline">Cadastrar estrutura</Link> para poder adicionar aqui.
+              </p>
+            )}
+
+            {editavel && catalogoEstruturas.length > 0 && (
+              <div className="mt-4 flex gap-2 print:hidden">
+                <Select value={estruturaParaAdicionar || "_"} onValueChange={(v) => setEstruturaParaAdicionar(v === "_" ? "" : v)}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Escolha uma estrutura" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_">Selecione…</SelectItem>
+                    {estruturasDisponiveis.map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button type="button" disabled={!estruturaParaAdicionar || addEstrutura.isPending} onClick={() => addEstrutura.mutate()}>
                   <Plus /> Adicionar
                 </Button>
               </div>
@@ -771,6 +1059,8 @@ function EventoDetalhePage() {
               <div className="flex justify-between"><dt className="text-muted-foreground">Convidados</dt><dd>{convidados}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Custo do cardápio</dt><dd>{formatCurrency(custoCardapioTotal)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Custo de materiais</dt><dd>{formatCurrency(custoMateriaisTotal)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Custo de equipe</dt><dd>{formatCurrency(custoEquipesTotal)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Custo de estrutura</dt><dd>{formatCurrency(custoEstruturasTotal)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Custo de itens avulsos</dt><dd>{formatCurrency(custoAvulsosTotal)}</dd></div>
               <div className="flex justify-between border-t pt-2"><dt className="text-muted-foreground">Custo total do orçamento</dt><dd>{formatCurrency(custoTotalOrcamento)}</dd></div>
             </dl>
