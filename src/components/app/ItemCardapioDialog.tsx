@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { CATEGORIA_ITEM_CARDAPIO, UNIDADE_MEDIDA, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
-import { MargemBadge } from "@/components/app/MargemBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +79,7 @@ export function ItemCardapioDialog({
       quantidade_por_convidado: l.quantidade_por_convidado,
       ingredientes: ingredientes.find((i) => i.id === l.ingrediente_id) ?? null,
     }));
-  const { custoConvidado, precoVendaConvidado, margem } = calcularCustoItemCardapio(ficha, empresa?.markup_padrao ?? 100);
+  const { custoConvidado } = calcularCustoItemCardapio(ficha);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -148,7 +147,7 @@ export function ItemCardapioDialog({
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{item ? "Editar item de cardápio" : "Novo item de cardápio"}</DialogTitle>
-            <DialogDescription>O preço de venda é calculado automaticamente pela ficha técnica + markup da empresa.</DialogDescription>
+            <DialogDescription>O custo por convidado é calculado automaticamente pela ficha técnica.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
@@ -221,9 +220,7 @@ export function ItemCardapioDialog({
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-accent/50 p-4">
             <div className="text-sm">
               <p className="text-muted-foreground">Custo por convidado: <span className="font-medium text-foreground">{formatCurrency(custoConvidado)}</span></p>
-              <p className="text-muted-foreground">Preço de venda por convidado: <span className="font-medium text-foreground">{formatCurrency(precoVendaConvidado)}</span></p>
             </div>
-            <MargemBadge margem={margem} margemAlvo={empresa?.margem_alvo ?? 35} margemMinima={empresa?.margem_minima ?? 20} />
           </div>
 
           <DialogFooter className="gap-2 sm:justify-between">

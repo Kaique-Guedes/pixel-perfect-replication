@@ -70,30 +70,26 @@ export const CATEGORIA_ITEM_CARDAPIO: Record<Enums<"categoria_item_cardapio">, s
 };
 
 /**
- * Custo, preço de venda e margem por convidado de um item de cardápio,
- * a partir da ficha técnica (ingrediente × quantidade por convidado) e
- * do markup configurado pela empresa. Recalculado no cliente sempre
- * que a ficha técnica ou o preço de um ingrediente mudam — nunca
- * fica armazenado no banco (evita ficar desatualizado).
+ * Custo por convidado de um item de cardápio, a partir da ficha
+ * técnica (ingrediente × quantidade por convidado). Recalculado no
+ * cliente sempre que a ficha técnica ou o preço de um ingrediente
+ * mudam — nunca fica armazenado no banco (evita ficar desatualizado).
+ * Não inclui margem: a margem de lucro é definida por evento (ver
+ * calcularValorComMargem), não mais por item de cardápio.
  */
 export function calcularCustoItemCardapio(
   ficha: { quantidade_por_convidado: number; ingredientes: { preco_unidade: number } | null }[],
-  markupPadrao: number,
 ) {
   const custoConvidado = ficha.reduce(
     (soma, f) => soma + f.quantidade_por_convidado * (f.ingredientes?.preco_unidade ?? 0),
     0,
   );
-  const precoVendaConvidado = custoConvidado * (1 + markupPadrao / 100);
-  const margem = precoVendaConvidado > 0 ? (precoVendaConvidado - custoConvidado) / precoVendaConvidado : 0;
-  return { custoConvidado, precoVendaConvidado, margem };
+  return { custoConvidado };
 }
 
-export function corMargem(margem: number, margemAlvo: number, margemMinima: number): "success" | "warning" | "destructive" {
-  const pct = margem * 100;
-  if (pct >= margemAlvo) return "success";
-  if (pct >= margemMinima) return "warning";
-  return "destructive";
+/** Aplica a margem de lucro (%) do evento sobre um valor de custo. */
+export function calcularValorComMargem(custo: number, margemLucroPct: number) {
+  return custo * (1 + margemLucroPct / 100);
 }
 
 export const TIPO_ITEM_AVULSO: Record<Enums<"tipo_item_avulso">, string> = {

@@ -1,28 +1,16 @@
 import { badge } from "@/components/app/StatusBadge";
-import { corMargem } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
- * Selo de margem em tempo real (verde ≥ alvo, amarelo ≥ mínima, vermelho
- * abaixo do mínimo aceitável), visível só para a equipe — nunca para o
- * cliente final.
+ * Selo mostrando a margem de lucro definida para o orçamento (valor
+ * direto, escolhido pela usuária por evento — não é mais comparado
+ * contra uma meta configurável).
  */
-export function MargemBadge({
-  margem,
-  margemAlvo,
-  margemMinima,
-  className,
-}: {
-  margem: number;
-  margemAlvo: number;
-  margemMinima: number;
-  className?: string;
-}) {
-  const tone = corMargem(margem, margemAlvo, margemMinima);
+export function MargemBadge({ margem, className }: { margem: number; className?: string }) {
   return (
-    <span className={cn(badge({ tone }), className)}>
+    <span className={cn(badge({ tone: "primary" }), className)}>
       <span className="size-1.5 rounded-full bg-current" />
-      Margem {(margem * 100).toFixed(0)}%
+      Margem {margem.toFixed(0)}%
     </span>
   );
 }

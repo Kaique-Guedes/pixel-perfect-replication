@@ -6,7 +6,7 @@ import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
+import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoItemCardapio, calcularValorComMargem, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ const empty = {
   convidados_estimados: 0,
   status: "orcamento" as Enums<"evento_status">,
   observacoes: "",
+  margem_lucro: 30,
 };
 
 export function EventoDialog({
@@ -98,6 +99,7 @@ export function EventoDialog({
             convidados_estimados: evento.convidados_estimados,
             status: evento.status,
             observacoes: evento.observacoes ?? "",
+            margem_lucro: evento.margem_lucro,
           }
         : { ...empty, ...defaults },
     );
@@ -141,6 +143,7 @@ export function EventoDialog({
         convidados_estimados: Number(form.convidados_estimados) || 0,
         status: form.status,
         observacoes: form.observacoes.trim() || null,
+        margem_lucro: Number(form.margem_lucro) || 0,
       };
       let eventoId: string;
       if (evento) {
@@ -198,20 +201,20 @@ export function EventoDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const markup = empresa?.markup_padrao ?? 100;
   const convidados = Number(form.convidados_estimados) || 0;
 
   const catalogoCalculado = useMemo(
     () =>
       catalogo.map((c) => ({
         ...c,
-        precoConvidado: calcularCustoItemCardapio(c.itens_cardapio_ingredientes, markup).precoVendaConvidado,
+        custoConvidado: calcularCustoItemCardapio(c.itens_cardapio_ingredientes).custoConvidado,
       })),
-    [catalogo, markup],
+    [catalogo],
   );
 
-  const totalOrcamento =
-    catalogoCalculado.filter((c) => selecionados.includes(c.id)).reduce((s, c) => s + c.precoConvidado, 0) * convidados;
+  const custoCardapioTotal =
+    catalogoCalculado.filter((c) => selecionados.includes(c.id)).reduce((s, c) => s + c.custoConvidado, 0) * convidados;
+  const totalOrcamento = calcularValorComMargem(custoCardapioTotal, Number(form.margem_lucro) || 0);
 
   const toggleItem = (id: string) =>
     setSelecionados((atual) => (atual.includes(id) ? atual.filter((i) => i !== id) : [...atual, id]));
@@ -318,18 +321,36 @@ export function EventoDialog({
                     <Checkbox checked={selecionados.includes(c.id)} onCheckedChange={() => toggleItem(c.id)} />
                     <span className="flex-1 text-sm">{c.nome}</span>
                     <span className="text-xs text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[c.categoria]}</span>
-                    <span className="text-sm text-muted-foreground">{formatCurrency(c.precoConvidado)}/convidado</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(c.custoConvidado)}/convidado (custo)</span>
                   </label>
                 ))}
               </div>
             )}
-            {selecionados.length > 0 && (
-              <p className="text-right text-sm text-muted-foreground">
-                Total do orçamento ({convidados} convidado{convidados === 1 ? "" : "s"}): <span className="font-medium text-foreground">{formatCurrency(totalOrcamento)}</span>
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">Itens avulsos (decoração, som etc.) e o restante do orçamento são ajustados na tela do evento depois de salvar.</p>
+            <p className="text-xs text-muted-foreground">Itens avulsos (decoração, som etc.) são ajustados na tela do evento depois de salvar — a margem abaixo se aplica sobre eles também.</p>
           </div>
+
+          {selecionados.length > 0 && (
+            <div className="space-y-2 rounded-lg bg-accent/50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="e-margem" className="text-sm">Margem de lucro desejada (%)</Label>
+                <Input
+                  id="e-margem"
+                  type="number"
+                  min={0}
+                  step="1"
+                  className="w-24 text-right"
+                  value={form.margem_lucro}
+                  onChange={(e) => setForm({ ...form, margem_lucro: Number(e.target.value) })}
+                />
+              </div>
+              <p className="text-right text-sm text-muted-foreground">
+                Custo do cardápio ({convidados} convidado{convidados === 1 ? "" : "s"}): {formatCurrency(custoCardapioTotal)}
+              </p>
+              <p className="text-right text-sm">
+                Total do orçamento (com margem): <span className="font-medium text-foreground">{formatCurrency(totalOrcamento)}</span>
+              </p>
+            </div>
+          )}
 
           <DialogFooter className="gap-2 sm:justify-between">
             {evento ? (

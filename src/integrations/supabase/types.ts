@@ -247,6 +247,7 @@ export type Database = {
           hora_inicio: string
           id: string
           local: string | null
+          margem_lucro: number
           observacoes: string | null
           status: Database["public"]["Enums"]["evento_status"]
           titulo: string
@@ -262,6 +263,7 @@ export type Database = {
           hora_inicio: string
           id?: string
           local?: string | null
+          margem_lucro?: number
           observacoes?: string | null
           status?: Database["public"]["Enums"]["evento_status"]
           titulo: string
@@ -277,6 +279,7 @@ export type Database = {
           hora_inicio?: string
           id?: string
           local?: string | null
+          margem_lucro?: number
           observacoes?: string | null
           status?: Database["public"]["Enums"]["evento_status"]
           titulo?: string

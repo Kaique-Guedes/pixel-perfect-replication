@@ -3,11 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { CATEGORIA_ITEM_CARDAPIO, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
-import { MargemBadge } from "@/components/app/MargemBadge";
 import { ItemCardapioDialog } from "@/components/app/ItemCardapioDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +20,6 @@ export const Route = createFileRoute("/_authenticated/app/cardapio")({
 });
 
 function CardapioPage() {
-  const { empresa } = useAuth();
   const [busca, setBusca] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<Enums<"categoria_item_cardapio"> | "_">("_");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,15 +56,11 @@ function CardapioPage() {
     setDialogOpen(true);
   };
 
-  const markup = empresa?.markup_padrao ?? 100;
-  const margemAlvo = empresa?.margem_alvo ?? 35;
-  const margemMinima = empresa?.margem_minima ?? 20;
-
   return (
     <>
       <PageHeader
         title="Cardápio"
-        description="Preço de venda e margem calculados automaticamente pela ficha técnica"
+        description="Custo por convidado calculado automaticamente pela ficha técnica"
         actions={
           <Button onClick={abrirNovo}>
             <Plus /> Novo item
@@ -113,26 +106,17 @@ function CardapioPage() {
               <TableRow>
                 <TableHead>Prato</TableHead>
                 <TableHead className="hidden sm:table-cell">Categoria</TableHead>
-                <TableHead className="hidden text-right md:table-cell">Custo / convidado</TableHead>
-                <TableHead className="text-right">Venda / convidado</TableHead>
-                <TableHead className="text-right">Margem</TableHead>
+                <TableHead className="text-right">Custo / convidado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtrados.map((i) => {
-                const { custoConvidado, precoVendaConvidado, margem } = calcularCustoItemCardapio(
-                  i.itens_cardapio_ingredientes,
-                  markup,
-                );
+                const { custoConvidado } = calcularCustoItemCardapio(i.itens_cardapio_ingredientes);
                 return (
                   <TableRow key={i.id} className="cursor-pointer" onClick={() => abrirEdicao(i)}>
                     <TableCell className="font-medium">{i.nome}</TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
-                    <TableCell className="hidden text-right text-muted-foreground md:table-cell">{formatCurrency(custoConvidado)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(precoVendaConvidado)}</TableCell>
-                    <TableCell className="text-right">
-                      <MargemBadge margem={margem} margemAlvo={margemAlvo} margemMinima={margemMinima} />
-                    </TableCell>
+                    <TableCell className="text-right">{formatCurrency(custoConvidado)}</TableCell>
                   </TableRow>
                 );
               })}

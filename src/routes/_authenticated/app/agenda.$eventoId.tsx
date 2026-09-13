@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
   STATUS_PARCELA,
   TIPO_ITEM_AVULSO,
   calcularCustoItemCardapio,
+  calcularValorComMargem,
   formatCurrency,
   formatDate,
   formatHora,
@@ -22,6 +23,7 @@ import { MargemBadge } from "@/components/app/MargemBadge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -43,6 +45,7 @@ function EventoDetalhePage() {
   });
   const [parcela, setParcela] = useState({ descricao: "", valor: 0, data_vencimento: "" });
   const [despesa, setDespesa] = useState({ descricao: "", fornecedor: "", valor: 0, data: new Date().toISOString().slice(0, 10) });
+  const [margemLucro, setMargemLucro] = useState(30);
 
   const { data: evento, isLoading: carregandoEvento } = useQuery({
     queryKey: ["eventos", eventoId],
@@ -107,7 +110,10 @@ function EventoDetalhePage() {
 
   const editavel = evento?.status === "orcamento";
   const convidados = evento?.convidados_estimados ?? 0;
-  const markup = empresa?.markup_padrao ?? 100;
+
+  useEffect(() => {
+    if (evento) setMargemLucro(evento.margem_lucro);
+  }, [evento?.margem_lucro]);
 
   const itensCalculados = useMemo(
     () =>
@@ -115,18 +121,17 @@ function EventoDetalhePage() {
         .filter((ie) => ie.itens_cardapio)
         .map((ie) => {
           const item = ie.itens_cardapio!;
-          const { custoConvidado, precoVendaConvidado } = calcularCustoItemCardapio(item.itens_cardapio_ingredientes, markup);
-          return { vinculoId: ie.id, id: item.id, nome: item.nome, categoria: item.categoria, custoConvidado, precoVendaConvidado };
+          const { custoConvidado } = calcularCustoItemCardapio(item.itens_cardapio_ingredientes);
+          return { vinculoId: ie.id, id: item.id, nome: item.nome, categoria: item.categoria, custoConvidado };
         }),
-    [itensEvento, markup],
+    [itensEvento],
   );
 
   const custoCardapioTotal = itensCalculados.reduce((s, i) => s + i.custoConvidado, 0) * convidados;
-  const subtotalCardapio = itensCalculados.reduce((s, i) => s + i.precoVendaConvidado, 0) * convidados;
-  const subtotalAvulsos = itensAvulsos.reduce((s, a) => s + (a.tipo === "por_convidado" ? a.valor * convidados : a.valor), 0);
-  const total = subtotalCardapio + subtotalAvulsos;
+  const custoAvulsosTotal = itensAvulsos.reduce((s, a) => s + (a.tipo === "por_convidado" ? a.valor * convidados : a.valor), 0);
+  const custoTotalOrcamento = custoCardapioTotal + custoAvulsosTotal;
+  const total = calcularValorComMargem(custoTotalOrcamento, margemLucro);
   const valorPorConvidado = convidados > 0 ? total / convidados : 0;
-  const margemCardapio = subtotalCardapio > 0 ? (subtotalCardapio - custoCardapioTotal) / subtotalCardapio : 0;
 
   const totalRecebido = parcelas.filter((p) => p.status === "pago").reduce((s, p) => s + p.valor, 0);
   const totalAReceber = parcelas.filter((p) => p.status === "pendente").reduce((s, p) => s + p.valor, 0);
@@ -287,6 +292,18 @@ function EventoDetalhePage() {
     },
   });
 
+  const salvarMargem = useMutation({
+    mutationFn: async (valor: number) => {
+      const { error } = await supabase.from("eventos").update({ margem_lucro: valor }).eq("id", eventoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidarTudo();
+      toast.success("Margem de lucro atualizada.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const submitAvulso = (e: FormEvent) => {
     e.preventDefault();
     if (!avulso.descricao.trim()) { toast.error("Descreva o item avulso."); return; }
@@ -364,7 +381,7 @@ function EventoDetalhePage() {
                   <TableRow>
                     <TableHead>Prato</TableHead>
                     <TableHead className="hidden sm:table-cell">Categoria</TableHead>
-                    <TableHead className="text-right">Valor / convidado</TableHead>
+                    <TableHead className="text-right">Custo / convidado</TableHead>
                     <TableHead className="text-right">Subtotal</TableHead>
                     {editavel && <TableHead className="w-10 print:hidden" />}
                   </TableRow>
@@ -374,8 +391,8 @@ function EventoDetalhePage() {
                     <TableRow key={i.vinculoId}>
                       <TableCell className="font-medium">{i.nome}</TableCell>
                       <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(i.precoVendaConvidado)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(i.precoVendaConvidado * convidados)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(i.custoConvidado)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(i.custoConvidado * convidados)}</TableCell>
                       {editavel && (
                         <TableCell className="print:hidden">
                           <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(i.vinculoId)} disabled={removeItem.isPending}>
@@ -626,12 +643,46 @@ function EventoDetalhePage() {
 
         <div className="space-y-6">
           <section className="surface-card p-5">
-            <h2 className="mb-4 text-lg font-medium">Resumo do orçamento</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-medium">Resumo do orçamento</h2>
+              <MargemBadge margem={margemLucro} />
+            </div>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Convidados</dt><dd>{convidados}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted-foreground">Cardápio</dt><dd>{formatCurrency(subtotalCardapio)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted-foreground">Itens avulsos</dt><dd>{formatCurrency(subtotalAvulsos)}</dd></div>
-              <div className="flex justify-between border-t pt-2 text-base font-medium"><dt>Total</dt><dd>{formatCurrency(total)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Custo do cardápio</dt><dd>{formatCurrency(custoCardapioTotal)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Custo de itens avulsos</dt><dd>{formatCurrency(custoAvulsosTotal)}</dd></div>
+              <div className="flex justify-between border-t pt-2"><dt className="text-muted-foreground">Custo total do orçamento</dt><dd>{formatCurrency(custoTotalOrcamento)}</dd></div>
+            </dl>
+
+            <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4 print:hidden">
+              <Label htmlFor="margem-lucro" className="text-sm text-muted-foreground">Margem de lucro desejada (%)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="margem-lucro"
+                  type="number"
+                  min={0}
+                  step="1"
+                  className="w-20 text-right"
+                  value={margemLucro}
+                  disabled={!editavel}
+                  onChange={(e) => setMargemLucro(Number(e.target.value))}
+                />
+                {editavel && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={salvarMargem.isPending || margemLucro === evento.margem_lucro}
+                    onClick={() => salvarMargem.mutate(margemLucro)}
+                  >
+                    Salvar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between border-t pt-2 text-base font-medium"><dt>Total do orçamento</dt><dd>{formatCurrency(total)}</dd></div>
               <div className="flex justify-between text-muted-foreground"><dt>Valor por convidado</dt><dd>{formatCurrency(valorPorConvidado)}</dd></div>
             </dl>
           </section>
@@ -650,12 +701,6 @@ function EventoDetalhePage() {
                 <span>{parcelasAtrasadas.length} parcela{parcelasAtrasadas.length > 1 ? "s" : ""} atrasada{parcelasAtrasadas.length > 1 ? "s" : ""}.</span>
               </div>
             )}
-          </section>
-
-          <section className="surface-card p-5 print:hidden">
-            <h2 className="mb-1 text-sm font-medium">Margem do cardápio (uso interno)</h2>
-            <p className="mb-3 text-xs text-muted-foreground">Não é exibida ao cliente final — só à equipe.</p>
-            <MargemBadge margem={margemCardapio} margemAlvo={empresa?.margem_alvo ?? 35} margemMinima={empresa?.margem_minima ?? 20} />
           </section>
         </div>
       </div>

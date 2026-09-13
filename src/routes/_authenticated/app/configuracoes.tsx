@@ -25,9 +25,6 @@ function ConfiguracoesPage() {
     telefone: "",
     endereco: "",
     tipo_negocio: "buffet" as Enums<"tipo_negocio">,
-    markup_padrao: 100,
-    margem_alvo: 35,
-    margem_minima: 20,
   });
 
   useEffect(() => {
@@ -38,9 +35,6 @@ function ConfiguracoesPage() {
       telefone: empresa.telefone ?? "",
       endereco: empresa.endereco ?? "",
       tipo_negocio: empresa.tipo_negocio ?? "buffet",
-      markup_padrao: empresa.markup_padrao,
-      margem_alvo: empresa.margem_alvo,
-      margem_minima: empresa.margem_minima,
     });
   }, [empresa]);
 
@@ -54,9 +48,6 @@ function ConfiguracoesPage() {
           telefone: form.telefone.trim() || null,
           endereco: form.endereco.trim() || null,
           tipo_negocio: form.tipo_negocio,
-          markup_padrao: Number(form.markup_padrao) || 0,
-          margem_alvo: Number(form.margem_alvo) || 0,
-          margem_minima: Number(form.margem_minima) || 0,
         })
         .eq("id", empresa!.id);
       if (error) throw error;
@@ -71,7 +62,6 @@ function ConfiguracoesPage() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) { toast.error("Informe o nome da empresa."); return; }
-    if (form.margem_minima > form.margem_alvo) { toast.error("A margem mínima não pode ser maior que a margem alvo."); return; }
     save.mutate();
   };
 
@@ -79,7 +69,7 @@ function ConfiguracoesPage() {
 
   return (
     <>
-      <PageHeader title="Configurações" description="Dados da empresa e parâmetros usados nos cálculos de cardápio" />
+      <PageHeader title="Configurações" description="Dados da empresa" />
 
       <form onSubmit={submit} className="surface-card max-w-2xl space-y-6 p-6">
         <fieldset disabled={!isAdmin} className="space-y-6 disabled:opacity-60">
@@ -118,24 +108,9 @@ function ConfiguracoesPage() {
           </div>
 
           <div className="border-t pt-6">
-            <h2 className="mb-1 text-sm font-medium">Cardápio e margem</h2>
-            <p className="mb-4 text-xs text-muted-foreground">
-              O markup define o preço de venda por convidado a partir do custo da ficha técnica. As margens definem a cor do selo (verde/amarelo/vermelho) na tela de cardápio.
+            <p className="text-xs text-muted-foreground">
+              A margem de lucro do orçamento agora é definida em cada evento, não mais aqui — veja a tela do evento.
             </p>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="cfg-markup">Markup padrão (%)</Label>
-                <Input id="cfg-markup" type="number" min={0} step="1" value={form.markup_padrao} onChange={(e) => setForm({ ...form, markup_padrao: Number(e.target.value) })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cfg-alvo">Margem alvo (%)</Label>
-                <Input id="cfg-alvo" type="number" min={0} max={100} step="1" value={form.margem_alvo} onChange={(e) => setForm({ ...form, margem_alvo: Number(e.target.value) })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cfg-minima">Margem mínima (%)</Label>
-                <Input id="cfg-minima" type="number" min={0} max={100} step="1" value={form.margem_minima} onChange={(e) => setForm({ ...form, margem_minima: Number(e.target.value) })} />
-              </div>
-            </div>
           </div>
 
           <div className="flex items-center justify-between">
