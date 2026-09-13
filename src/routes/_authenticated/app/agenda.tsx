@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { endOfMonth, format, isSameDay, parseISO, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -120,14 +120,13 @@ function AgendaPage() {
                       {e.clientes?.nome && <span>{e.clientes.nome}</span>}
                     </p>
                   </div>
-                  <Link
-                    to="/app/agenda/$eventoId"
-                    params={{ eventoId: e.id }}
-                    onClick={(ev) => ev.stopPropagation()}
+                  <button
+                    type="button"
+                    onClick={(ev) => { ev.stopPropagation(); window.open(`/app/agenda/${e.id}`, "_blank"); }}
                     className="flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <Receipt className="size-3.5" /> Orçamento
-                  </Link>
+                  </button>
                   <EventoStatusBadge status={e.status} />
                 </li>
               ))}
