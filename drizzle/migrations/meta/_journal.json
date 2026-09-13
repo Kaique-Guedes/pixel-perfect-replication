@@ -85,6 +85,13 @@
       "when": 1789309578698,
       "tag": "0011_margem_por_evento",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789309617404,
+      "tag": "0012_materiais_equipe",
+      "breakpoints": true
     }
   ]
 }
