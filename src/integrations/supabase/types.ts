@@ -155,34 +155,190 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          endereco: string | null
           id: string
           margem_alvo: number
           margem_minima: number
           markup_padrao: number
           nome: string
+          telefone: string | null
           tipo_negocio: Database["public"]["Enums"]["tipo_negocio"] | null
         }
         Insert: {
           cnpj?: string | null
           created_at?: string
+          endereco?: string | null
           id?: string
           margem_alvo?: number
           margem_minima?: number
           markup_padrao?: number
           nome: string
+          telefone?: string | null
           tipo_negocio?: Database["public"]["Enums"]["tipo_negocio"] | null
         }
         Update: {
           cnpj?: string | null
           created_at?: string
+          endereco?: string | null
           id?: string
           margem_alvo?: number
           margem_minima?: number
           markup_padrao?: number
           nome?: string
+          telefone?: string | null
           tipo_negocio?: Database["public"]["Enums"]["tipo_negocio"] | null
         }
         Relationships: []
+      }
+      equipes: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes_funcionarios: {
+        Row: {
+          empresa_id: string
+          equipe_id: string
+          funcionario_id: string
+          horas: number
+          id: string
+        }
+        Insert: {
+          empresa_id: string
+          equipe_id: string
+          funcionario_id: string
+          horas: number
+          id?: string
+        }
+        Update: {
+          empresa_id?: string
+          equipe_id?: string
+          funcionario_id?: string
+          horas?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipes_funcionarios_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipes_funcionarios_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estruturas: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estruturas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estruturas_materiais: {
+        Row: {
+          empresa_id: string
+          estrutura_id: string
+          id: string
+          ingrediente_id: string
+          quantidade_por_convidado: number
+        }
+        Insert: {
+          empresa_id: string
+          estrutura_id: string
+          id?: string
+          ingrediente_id: string
+          quantidade_por_convidado: number
+        }
+        Update: {
+          empresa_id?: string
+          estrutura_id?: string
+          id?: string
+          ingrediente_id?: string
+          quantidade_por_convidado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estruturas_materiais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estruturas_materiais_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estruturas_materiais_ingrediente_id_fkey"
+            columns: ["ingrediente_id"]
+            isOneToOne: false
+            referencedRelation: "ingredientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       evento_cardapio_itens: {
         Row: {
@@ -230,6 +386,147 @@ export type Database = {
           },
         ]
       }
+      evento_equipes: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          equipe_id: string
+          evento_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          equipe_id: string
+          evento_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          equipe_id?: string
+          evento_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_equipes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_equipes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_equipes_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evento_estruturas: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          estrutura_id: string
+          evento_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          estrutura_id: string
+          evento_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          estrutura_id?: string
+          evento_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_estruturas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_estruturas_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_estruturas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evento_materiais: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          evento_id: string
+          id: string
+          ingrediente_id: string
+          quantidade_por_convidado: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          evento_id: string
+          id?: string
+          ingrediente_id: string
+          quantidade_por_convidado: number
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          evento_id?: string
+          id?: string
+          ingrediente_id?: string
+          quantidade_por_convidado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_materiais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_materiais_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_materiais_ingrediente_id_fkey"
+            columns: ["ingrediente_id"]
+            isOneToOne: false
+            referencedRelation: "ingredientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventos: {
         Row: {
           cliente_id: string | null
@@ -241,6 +538,7 @@ export type Database = {
           hora_inicio: string
           id: string
           local: string | null
+          margem_lucro: number
           observacoes: string | null
           status: Database["public"]["Enums"]["evento_status"]
           titulo: string
@@ -256,6 +554,7 @@ export type Database = {
           hora_inicio: string
           id?: string
           local?: string | null
+          margem_lucro?: number
           observacoes?: string | null
           status?: Database["public"]["Enums"]["evento_status"]
           titulo: string
@@ -271,6 +570,7 @@ export type Database = {
           hora_inicio?: string
           id?: string
           local?: string | null
+          margem_lucro?: number
           observacoes?: string | null
           status?: Database["public"]["Enums"]["evento_status"]
           titulo?: string
@@ -293,6 +593,41 @@ export type Database = {
           },
         ]
       }
+      funcionarios: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          funcao: string
+          id: string
+          nome: string
+          valor_hora: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          funcao: string
+          id?: string
+          nome: string
+          valor_hora?: number
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          funcao?: string
+          id?: string
+          nome?: string
+          valor_hora?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredientes: {
         Row: {
           categoria: Database["public"]["Enums"]["categoria_ingrediente"]
@@ -303,6 +638,7 @@ export type Database = {
           id: string
           nome: string
           preco_unidade: number
+          tipo: Database["public"]["Enums"]["tipo_insumo"]
           unidade: Database["public"]["Enums"]["unidade_medida"]
           updated_at: string
         }
@@ -315,6 +651,7 @@ export type Database = {
           id?: string
           nome: string
           preco_unidade?: number
+          tipo?: Database["public"]["Enums"]["tipo_insumo"]
           unidade: Database["public"]["Enums"]["unidade_medida"]
           updated_at?: string
         }
@@ -327,6 +664,7 @@ export type Database = {
           id?: string
           nome?: string
           preco_unidade?: number
+          tipo?: Database["public"]["Enums"]["tipo_insumo"]
           unidade?: Database["public"]["Enums"]["unidade_medida"]
           updated_at?: string
         }
@@ -629,6 +967,7 @@ export type Database = {
         | "realizado"
         | "cancelado"
       status_parcela: "pendente" | "pago"
+      tipo_insumo: "ingrediente" | "material"
       tipo_item_avulso: "fixo" | "por_convidado"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
       unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
@@ -787,6 +1126,7 @@ export const Constants = {
         "cancelado",
       ],
       status_parcela: ["pendente", "pago"],
+      tipo_insumo: ["ingrediente", "material"],
       tipo_item_avulso: ["fixo", "por_convidado"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
       unidade_medida: ["kg", "g", "litro", "ml", "unidade"],

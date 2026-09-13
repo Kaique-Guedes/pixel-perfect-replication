@@ -78,6 +78,13 @@
       "when": 1789309565932,
       "tag": "0010_contato_empresa",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789309578698,
+      "tag": "0011_margem_por_evento",
+      "breakpoints": true
     }
   ]
 }
