@@ -326,7 +326,7 @@ export function EventoDialog({
                 ))}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">Itens avulsos (decoração, som etc.) são ajustados na tela do evento depois de salvar — a margem abaixo se aplica sobre eles também.</p>
+            <p className="text-xs text-muted-foreground">Materiais (mesa, cadeira etc.) e itens avulsos (decoração, som etc.) são ajustados na tela do evento depois de salvar — a margem abaixo se aplica sobre eles também.</p>
           </div>
 
           {selecionados.length > 0 && (

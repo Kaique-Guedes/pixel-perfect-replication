@@ -29,7 +29,7 @@ const NAV = [
   { to: "/app", label: "Painel", icon: LayoutDashboard, exact: true },
   { to: "/app/clientes", label: "Clientes", icon: Users },
   { to: "/app/agenda", label: "Agenda", icon: CalendarDays },
-  { to: "/app/ingredientes", label: "Ingredientes", icon: ShoppingBasket },
+  { to: "/app/ingredientes", label: "Insumos e equipe", icon: ShoppingBasket },
   { to: "/app/cardapio", label: "Cardápio", icon: ChefHat },
   { to: "/app/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/app/configuracoes", label: "Configurações", icon: Settings },

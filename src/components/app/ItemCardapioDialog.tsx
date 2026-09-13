@@ -36,7 +36,7 @@ export function ItemCardapioDialog({
   const { data: ingredientes = [] } = useQuery({
     queryKey: ["ingredientes"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("ingredientes").select("id, nome, preco_unidade, unidade").order("nome");
+      const { data, error } = await supabase.from("ingredientes").select("id, nome, preco_unidade, unidade").eq("tipo", "ingrediente").order("nome");
       if (error) throw error;
       return data;
     },

@@ -236,6 +236,55 @@ export type Database = {
           },
         ]
       }
+      evento_materiais: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          evento_id: string
+          id: string
+          ingrediente_id: string
+          quantidade_por_convidado: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          evento_id: string
+          id?: string
+          ingrediente_id: string
+          quantidade_por_convidado: number
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          evento_id?: string
+          id?: string
+          ingrediente_id?: string
+          quantidade_por_convidado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_materiais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_materiais_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_materiais_ingrediente_id_fkey"
+            columns: ["ingrediente_id"]
+            isOneToOne: false
+            referencedRelation: "ingredientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventos: {
         Row: {
           cliente_id: string | null
@@ -302,6 +351,41 @@ export type Database = {
           },
         ]
       }
+      funcionarios: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          funcao: string
+          id: string
+          nome: string
+          valor_hora: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          funcao: string
+          id?: string
+          nome: string
+          valor_hora?: number
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          funcao?: string
+          id?: string
+          nome?: string
+          valor_hora?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredientes: {
         Row: {
           categoria: Database["public"]["Enums"]["categoria_ingrediente"]
@@ -312,6 +396,7 @@ export type Database = {
           id: string
           nome: string
           preco_unidade: number
+          tipo: Database["public"]["Enums"]["tipo_insumo"]
           unidade: Database["public"]["Enums"]["unidade_medida"]
           updated_at: string
         }
@@ -324,6 +409,7 @@ export type Database = {
           id?: string
           nome: string
           preco_unidade?: number
+          tipo?: Database["public"]["Enums"]["tipo_insumo"]
           unidade: Database["public"]["Enums"]["unidade_medida"]
           updated_at?: string
         }
@@ -336,6 +422,7 @@ export type Database = {
           id?: string
           nome?: string
           preco_unidade?: number
+          tipo?: Database["public"]["Enums"]["tipo_insumo"]
           unidade?: Database["public"]["Enums"]["unidade_medida"]
           updated_at?: string
         }
@@ -638,6 +725,7 @@ export type Database = {
         | "realizado"
         | "cancelado"
       status_parcela: "pendente" | "pago"
+      tipo_insumo: "ingrediente" | "material"
       tipo_item_avulso: "fixo" | "por_convidado"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
       unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
@@ -796,6 +884,7 @@ export const Constants = {
         "cancelado",
       ],
       status_parcela: ["pendente", "pago"],
+      tipo_insumo: ["ingrediente", "material"],
       tipo_item_avulso: ["fixo", "por_convidado"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
       unidade_medida: ["kg", "g", "litro", "ml", "unidade"],

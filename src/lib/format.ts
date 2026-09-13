@@ -62,6 +62,11 @@ export const CATEGORIA_INGREDIENTE: Record<Enums<"categoria_ingrediente">, strin
   outro: "Outro",
 };
 
+export const TIPO_INSUMO: Record<Enums<"tipo_insumo">, string> = {
+  ingrediente: "Ingrediente",
+  material: "Material",
+};
+
 export const CATEGORIA_ITEM_CARDAPIO: Record<Enums<"categoria_item_cardapio">, string> = {
   entrada: "Entrada",
   prato_principal: "Prato principal",

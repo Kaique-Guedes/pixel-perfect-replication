@@ -10,6 +10,7 @@ import {
   CATEGORIA_ITEM_CARDAPIO,
   STATUS_PARCELA,
   TIPO_ITEM_AVULSO,
+  UNIDADE_MEDIDA,
   calcularCustoItemCardapio,
   calcularValorComMargem,
   formatCurrency,
@@ -38,6 +39,7 @@ function EventoDetalhePage() {
   const qc = useQueryClient();
 
   const [itemParaAdicionar, setItemParaAdicionar] = useState("");
+  const [material, setMaterial] = useState({ ingrediente_id: "", quantidade_por_convidado: 1 });
   const [avulso, setAvulso] = useState<{ descricao: string; tipo: Enums<"tipo_item_avulso">; valor: number }>({
     descricao: "",
     tipo: "fixo",
@@ -81,10 +83,31 @@ function EventoDetalhePage() {
     },
   });
 
+  const { data: materiaisEvento = [] } = useQuery({
+    queryKey: ["evento-materiais", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_materiais")
+        .select("id, ingrediente_id, quantidade_por_convidado, ingredientes(nome, preco_unidade, unidade)")
+        .eq("evento_id", eventoId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: catalogo = [] } = useQuery({
     queryKey: ["itens-cardapio"],
     queryFn: async () => {
       const { data, error } = await supabase.from("itens_cardapio").select("id, nome, categoria").order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: catalogoMateriais = [] } = useQuery({
+    queryKey: ["materiais"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("ingredientes").select("id, nome, preco_unidade, unidade").eq("tipo", "material").order("nome");
       if (error) throw error;
       return data;
     },
@@ -129,7 +152,8 @@ function EventoDetalhePage() {
 
   const custoCardapioTotal = itensCalculados.reduce((s, i) => s + i.custoConvidado, 0) * convidados;
   const custoAvulsosTotal = itensAvulsos.reduce((s, a) => s + (a.tipo === "por_convidado" ? a.valor * convidados : a.valor), 0);
-  const custoTotalOrcamento = custoCardapioTotal + custoAvulsosTotal;
+  const custoMateriaisTotal = materiaisEvento.reduce((s, m) => s + m.quantidade_por_convidado * (m.ingredientes?.preco_unidade ?? 0), 0) * convidados;
+  const custoTotalOrcamento = custoCardapioTotal + custoAvulsosTotal + custoMateriaisTotal;
   const total = calcularValorComMargem(custoTotalOrcamento, margemLucro);
   const valorPorConvidado = convidados > 0 ? total / convidados : 0;
 
@@ -140,10 +164,12 @@ function EventoDetalhePage() {
   const margemRealizada = total - totalDespesas;
 
   const itensDisponiveis = catalogo.filter((c) => !itensCalculados.some((i) => i.id === c.id));
+  const materiaisDisponiveis = catalogoMateriais.filter((m) => !materiaisEvento.some((me) => me.ingrediente_id === m.id));
 
   const invalidarTudo = () => {
     void qc.invalidateQueries({ queryKey: ["evento-cardapio-itens", eventoId] });
     void qc.invalidateQueries({ queryKey: ["orcamento-itens-avulsos", eventoId] });
+    void qc.invalidateQueries({ queryKey: ["evento-materiais", eventoId] });
     void qc.invalidateQueries({ queryKey: ["parcelas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["despesas", eventoId] });
     void qc.invalidateQueries({ queryKey: ["eventos", eventoId] });
@@ -203,6 +229,32 @@ function EventoDetalhePage() {
   const removeAvulso = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("orcamento_itens_avulsos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidarTudo,
+    onError: erroTravado,
+  });
+
+  const addMaterial = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("evento_materiais").insert({
+        empresa_id: empresa!.id,
+        evento_id: eventoId,
+        ingrediente_id: material.ingrediente_id,
+        quantidade_por_convidado: Number(material.quantidade_por_convidado) || 0,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setMaterial({ ingrediente_id: "", quantidade_por_convidado: 1 });
+      invalidarTudo();
+    },
+    onError: erroTravado,
+  });
+
+  const removeMaterial = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("evento_materiais").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: invalidarTudo,
@@ -430,6 +482,74 @@ function EventoDetalhePage() {
           </section>
 
           <section className="surface-card p-5">
+            <h2 className="mb-4 text-lg font-medium">Materiais do evento</h2>
+            {materiaisEvento.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum material (mesa, cadeira, descartáveis…) adicionado ainda.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Material</TableHead>
+                    <TableHead className="text-right">Qtd. / convidado</TableHead>
+                    <TableHead className="text-right">Subtotal</TableHead>
+                    {editavel && <TableHead className="w-10 print:hidden" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {materiaisEvento.map((m) => {
+                    const preco = m.ingredientes?.preco_unidade ?? 0;
+                    return (
+                      <TableRow key={m.id}>
+                        <TableCell className="font-medium">{m.ingredientes?.nome ?? "—"}</TableCell>
+                        <TableCell className="text-right">{m.quantidade_por_convidado} {m.ingredientes ? UNIDADE_MEDIDA[m.ingredientes.unidade] : ""}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(m.quantidade_por_convidado * preco * convidados)}</TableCell>
+                        {editavel && (
+                          <TableCell className="print:hidden">
+                            <Button variant="ghost" size="icon" onClick={() => removeMaterial.mutate(m.id)} disabled={removeMaterial.isPending}>
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+
+            {editavel && catalogoMateriais.length === 0 && (
+              <p className="mt-4 text-sm text-muted-foreground print:hidden">
+                Você ainda não tem materiais cadastrados.{" "}
+                <Link to="/app/ingredientes" className="text-primary hover:underline">Cadastrar material</Link> para poder adicionar aqui.
+              </p>
+            )}
+
+            {editavel && catalogoMateriais.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2 print:hidden">
+                <Select value={material.ingrediente_id || "_"} onValueChange={(v) => setMaterial({ ...material, ingrediente_id: v === "_" ? "" : v })}>
+                  <SelectTrigger className="min-w-[160px] flex-1"><SelectValue placeholder="Escolha um material" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_">Selecione…</SelectItem>
+                    {materiaisDisponiveis.map((m) => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className="w-32"
+                  placeholder="Qtd. / convidado"
+                  value={material.quantidade_por_convidado}
+                  onChange={(e) => setMaterial({ ...material, quantidade_por_convidado: Number(e.target.value) })}
+                />
+                <Button type="button" disabled={!material.ingrediente_id || addMaterial.isPending} onClick={() => addMaterial.mutate()}>
+                  <Plus /> Adicionar
+                </Button>
+              </div>
+            )}
+          </section>
+
+          <section className="surface-card p-5">
             <h2 className="mb-4 text-lg font-medium">Itens avulsos</h2>
             {itensAvulsos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum item avulso (decoração, som, aluguel de espaço…) adicionado.</p>
@@ -650,6 +770,7 @@ function EventoDetalhePage() {
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Convidados</dt><dd>{convidados}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Custo do cardápio</dt><dd>{formatCurrency(custoCardapioTotal)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Custo de materiais</dt><dd>{formatCurrency(custoMateriaisTotal)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Custo de itens avulsos</dt><dd>{formatCurrency(custoAvulsosTotal)}</dd></div>
               <div className="flex justify-between border-t pt-2"><dt className="text-muted-foreground">Custo total do orçamento</dt><dd>{formatCurrency(custoTotalOrcamento)}</dd></div>
             </dl>
