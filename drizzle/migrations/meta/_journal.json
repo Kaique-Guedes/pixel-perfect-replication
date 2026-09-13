@@ -71,6 +71,13 @@
       "when": 1788530000000,
       "tag": "0009_evento_equipe_estrutura",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789309565932,
+      "tag": "0010_contato_empresa",
+      "breakpoints": true
     }
   ]
 }
