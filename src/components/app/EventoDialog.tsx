@@ -6,7 +6,7 @@ import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoEquipe, calcularCustoEstrutura, calcularCustoItemCardapio, calcularValorComMargem, formatCurrency } from "@/lib/format";
+import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoEquipe, calcularCustoEstrutura, calcularCustoItemCardapio, calcularResumoOrcamento, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,7 +74,7 @@ export function EventoDialog({
   });
 
   const { data: itensDoEvento } = useQuery({
-    queryKey: ["evento-cardapio-itens", evento?.id],
+    queryKey: ["evento-cardapio-itens", evento?.id, "ids"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("evento_cardapio_itens")
@@ -113,7 +113,7 @@ export function EventoDialog({
   });
 
   const { data: equipesDoEvento } = useQuery({
-    queryKey: ["evento-equipes", evento?.id],
+    queryKey: ["evento-equipes", evento?.id, "ids"],
     queryFn: async () => {
       const { data, error } = await supabase.from("evento_equipes").select("id, equipe_id").eq("evento_id", evento!.id);
       if (error) throw error;
@@ -123,9 +123,39 @@ export function EventoDialog({
   });
 
   const { data: estruturasDoEvento } = useQuery({
-    queryKey: ["evento-estruturas", evento?.id],
+    queryKey: ["evento-estruturas", evento?.id, "ids"],
     queryFn: async () => {
       const { data, error } = await supabase.from("evento_estruturas").select("id, estrutura_id").eq("evento_id", evento!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!evento?.id,
+  });
+
+  // Materiais e itens avulsos só são editados na tela do evento, mas entram
+  // no total — sem eles o total deste diálogo não batia com o da tela do evento.
+  // Mesma chave e mesmo select da tela do evento, para compartilhar o cache.
+  const { data: materiaisDoEvento = [] } = useQuery({
+    queryKey: ["evento-materiais", evento?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_materiais")
+        .select("id, ingrediente_id, quantidade_por_convidado, ingredientes(nome, preco_unidade, unidade)")
+        .eq("evento_id", evento!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!evento?.id,
+  });
+
+  const { data: avulsosDoEvento = [] } = useQuery({
+    queryKey: ["orcamento-itens-avulsos", evento?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orcamento_itens_avulsos")
+        .select("*")
+        .eq("evento_id", evento!.id)
+        .order("created_at");
       if (error) throw error;
       return data;
     },
@@ -295,24 +325,26 @@ export function EventoDialog({
     [catalogo],
   );
 
-  const custoCardapioTotal =
-    catalogoCalculado.filter((c) => selecionados.includes(c.id)).reduce((s, c) => s + c.custoConvidado, 0) * convidados;
-
   const equipesCalculadas = useMemo(
     () => equipesCatalogo.map((e) => ({ ...e, custoTotal: calcularCustoEquipe(e.equipes_funcionarios) })),
     [equipesCatalogo],
   );
-  const custoEquipesTotal = equipesCalculadas.filter((e) => equipesSelecionadas.includes(e.id)).reduce((s, e) => s + e.custoTotal, 0);
 
   const estruturasCalculadas = useMemo(
     () => estruturasCatalogo.map((e) => ({ ...e, custoConvidado: calcularCustoEstrutura(e.estruturas_materiais) })),
     [estruturasCatalogo],
   );
-  const custoEstruturasTotal =
-    estruturasCalculadas.filter((e) => estruturasSelecionadas.includes(e.id)).reduce((s, e) => s + e.custoConvidado, 0) * convidados;
 
-  const custoTotalOrcamento = custoCardapioTotal + custoEquipesTotal + custoEstruturasTotal;
-  const totalOrcamento = calcularValorComMargem(custoTotalOrcamento, Number(form.margem_lucro) || 0);
+  const { custoTotal: custoTotalOrcamento, total: totalOrcamento } = calcularResumoOrcamento({
+    convidados,
+    margemLucroPct: Number(form.margem_lucro) || 0,
+    itensCardapio: catalogoCalculado.filter((c) => selecionados.includes(c.id)),
+    materiais: evento ? materiaisDoEvento : [],
+    equipes: equipesCalculadas.filter((e) => equipesSelecionadas.includes(e.id)),
+    estruturas: estruturasCalculadas.filter((e) => estruturasSelecionadas.includes(e.id)),
+    avulsos: evento ? avulsosDoEvento : [],
+  });
+  const temMateriaisOuAvulsos = !!evento && (materiaisDoEvento.length > 0 || avulsosDoEvento.length > 0);
 
   const toggleItem = (id: string) =>
     setSelecionados((atual) => (atual.includes(id) ? atual.filter((i) => i !== id) : [...atual, id]));
@@ -465,7 +497,7 @@ export function EventoDialog({
             )}
           </div>
 
-          {(selecionados.length > 0 || equipesSelecionadas.length > 0 || estruturasSelecionadas.length > 0) && (
+          {(selecionados.length > 0 || equipesSelecionadas.length > 0 || estruturasSelecionadas.length > 0 || temMateriaisOuAvulsos) && (
             <div className="space-y-2 rounded-lg bg-accent/50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="e-margem" className="text-sm">Margem de lucro desejada (%)</Label>
@@ -482,6 +514,9 @@ export function EventoDialog({
               <p className="text-right text-sm text-muted-foreground">
                 Custo total ({convidados} convidado{convidados === 1 ? "" : "s"}): {formatCurrency(custoTotalOrcamento)}
               </p>
+              {temMateriaisOuAvulsos && (
+                <p className="text-right text-xs text-muted-foreground">Inclui os materiais e itens avulsos já lançados na tela do evento.</p>
+              )}
               <p className="text-right text-sm">
                 Total do orçamento (com margem): <span className="font-medium text-foreground">{formatCurrency(totalOrcamento)}</span>
               </p>

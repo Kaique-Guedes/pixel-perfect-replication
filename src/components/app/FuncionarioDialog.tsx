@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { invalidarCustos } from "@/lib/invalidar";
 import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,7 @@ export function FuncionarioDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["funcionarios"] });
+      invalidarCustos(qc);
       toast.success(funcionario ? "Funcionário atualizado." : "Funcionário cadastrado.");
       onOpenChange(false);
     },
@@ -64,7 +65,7 @@ export function FuncionarioDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["funcionarios"] });
+      invalidarCustos(qc);
       toast.success("Funcionário excluído.");
       onOpenChange(false);
     },

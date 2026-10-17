@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { invalidarCustos } from "@/lib/invalidar";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { CATEGORIA_ITEM_CARDAPIO, UNIDADE_MEDIDA, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export function ItemCardapioDialog({
   const [linhas, setLinhas] = useState<FichaLinha[]>([novaLinha()]);
 
   const { data: ingredientes = [] } = useQuery({
-    queryKey: ["ingredientes"],
+    queryKey: ["ingredientes", "ficha"],
     queryFn: async () => {
       const { data, error } = await supabase.from("ingredientes").select("id, nome, preco_unidade, unidade").eq("tipo", "ingrediente").order("nome");
       if (error) throw error;
@@ -107,8 +108,7 @@ export function ItemCardapioDialog({
       }
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["itens-cardapio"] });
-      void qc.invalidateQueries({ queryKey: ["ficha-tecnica"] });
+      invalidarCustos(qc);
       toast.success(item ? "Item de cardápio atualizado." : "Item de cardápio cadastrado.");
       onOpenChange(false);
     },
@@ -121,7 +121,7 @@ export function ItemCardapioDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["itens-cardapio"] });
+      invalidarCustos(qc);
       toast.success("Item de cardápio excluído.");
       onOpenChange(false);
     },

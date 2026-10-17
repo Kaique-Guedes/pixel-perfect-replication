@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { invalidarCustos } from "@/lib/invalidar";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { CATEGORIA_INGREDIENTE, TIPO_INSUMO, UNIDADE_MEDIDA } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -76,9 +77,7 @@ export function IngredienteDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["ingredientes"] });
-      void qc.invalidateQueries({ queryKey: ["itens-cardapio"] });
-      void qc.invalidateQueries({ queryKey: ["materiais"] });
+      invalidarCustos(qc);
       toast.success(ingrediente ? `${TIPO_INSUMO[form.tipo]} atualizado.` : `${TIPO_INSUMO[form.tipo]} cadastrado.`);
       onOpenChange(false);
     },
@@ -91,8 +90,7 @@ export function IngredienteDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["ingredientes"] });
-      void qc.invalidateQueries({ queryKey: ["materiais"] });
+      invalidarCustos(qc);
       toast.success(`${TIPO_INSUMO[form.tipo]} excluído.`);
       onOpenChange(false);
     },
@@ -151,7 +149,7 @@ export function IngredienteDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="i-preco">Preço por unidade (R$)</Label>
+              <Label htmlFor="i-preco">Preço por {UNIDADE_MEDIDA[form.unidade]} (R$)</Label>
               <Input id="i-preco" type="number" min={0} step="0.01" value={form.preco_unidade} onChange={(e) => setForm({ ...form, preco_unidade: Number(e.target.value) })} />
             </div>
             <div className="space-y-2">

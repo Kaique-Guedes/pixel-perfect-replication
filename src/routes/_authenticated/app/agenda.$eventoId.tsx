@@ -14,11 +14,15 @@ import {
   calcularCustoEquipe,
   calcularCustoEstrutura,
   calcularCustoItemCardapio,
-  calcularValorComMargem,
+  calcularResumoOrcamento,
+  arredondarMoeda,
   formatCurrency,
   formatDate,
   formatHora,
+  hojeISO,
   parcelaAtrasada,
+  subtotalAvulso,
+  subtotalPorConvidado,
 } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
 import { EventoStatusBadge, badge } from "@/components/app/StatusBadge";
@@ -50,7 +54,7 @@ function EventoDetalhePage() {
     valor: 0,
   });
   const [parcela, setParcela] = useState({ descricao: "", valor: 0, data_vencimento: "" });
-  const [despesa, setDespesa] = useState({ descricao: "", fornecedor: "", valor: 0, data: new Date().toISOString().slice(0, 10) });
+  const [despesa, setDespesa] = useState({ descricao: "", fornecedor: "", valor: 0, data: hojeISO() });
   const [margemLucro, setMargemLucro] = useState(30);
 
   const { data: evento, isLoading: carregandoEvento } = useQuery({
@@ -100,7 +104,7 @@ function EventoDetalhePage() {
   });
 
   const { data: catalogo = [] } = useQuery({
-    queryKey: ["itens-cardapio"],
+    queryKey: ["itens-cardapio", "opcoes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("itens_cardapio").select("id, nome, categoria").order("nome");
       if (error) throw error;
@@ -130,7 +134,7 @@ function EventoDetalhePage() {
   });
 
   const { data: catalogoEquipes = [] } = useQuery({
-    queryKey: ["equipes"],
+    queryKey: ["equipes", "opcoes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("equipes").select("id, nome").order("nome");
       if (error) throw error;
@@ -151,7 +155,7 @@ function EventoDetalhePage() {
   });
 
   const { data: catalogoEstruturas = [] } = useQuery({
-    queryKey: ["estruturas"],
+    queryKey: ["estruturas", "opcoes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("estruturas").select("id, nome").order("nome");
       if (error) throw error;
@@ -196,28 +200,40 @@ function EventoDetalhePage() {
     [itensEvento],
   );
 
-  const custoCardapioTotal = itensCalculados.reduce((s, i) => s + i.custoConvidado, 0) * convidados;
-  const custoAvulsosTotal = itensAvulsos.reduce((s, a) => s + (a.tipo === "por_convidado" ? a.valor * convidados : a.valor), 0);
-  const custoMateriaisTotal = materiaisEvento.reduce((s, m) => s + m.quantidade_por_convidado * (m.ingredientes?.preco_unidade ?? 0), 0) * convidados;
   const equipesCalculadas = useMemo(
     () => equipesEvento.filter((e) => e.equipes).map((e) => ({ vinculoId: e.id, id: e.equipe_id, nome: e.equipes!.nome, custoTotal: calcularCustoEquipe(e.equipes!.equipes_funcionarios) })),
     [equipesEvento],
   );
-  const custoEquipesTotal = equipesCalculadas.reduce((s, e) => s + e.custoTotal, 0);
   const estruturasCalculadas = useMemo(
     () => estruturasEvento.filter((e) => e.estruturas).map((e) => ({ vinculoId: e.id, id: e.estrutura_id, nome: e.estruturas!.nome, custoConvidado: calcularCustoEstrutura(e.estruturas!.estruturas_materiais) })),
     [estruturasEvento],
   );
-  const custoEstruturasTotal = estruturasCalculadas.reduce((s, e) => s + e.custoConvidado, 0) * convidados;
-  const custoTotalOrcamento = custoCardapioTotal + custoAvulsosTotal + custoMateriaisTotal + custoEquipesTotal + custoEstruturasTotal;
-  const total = calcularValorComMargem(custoTotalOrcamento, margemLucro);
-  const valorPorConvidado = convidados > 0 ? total / convidados : 0;
+  const {
+    custoCardapio: custoCardapioTotal,
+    custoMateriais: custoMateriaisTotal,
+    custoEquipes: custoEquipesTotal,
+    custoEstruturas: custoEstruturasTotal,
+    custoAvulsos: custoAvulsosTotal,
+    custoTotal: custoTotalOrcamento,
+    total,
+    valorPorConvidado,
+  } = calcularResumoOrcamento({
+    convidados,
+    margemLucroPct: margemLucro,
+    itensCardapio: itensCalculados,
+    materiais: materiaisEvento,
+    equipes: equipesCalculadas,
+    estruturas: estruturasCalculadas,
+    avulsos: itensAvulsos,
+  });
 
-  const totalRecebido = parcelas.filter((p) => p.status === "pago").reduce((s, p) => s + p.valor, 0);
-  const totalAReceber = parcelas.filter((p) => p.status === "pendente").reduce((s, p) => s + p.valor, 0);
+  const totalRecebido = arredondarMoeda(parcelas.filter((p) => p.status === "pago").reduce((s, p) => s + p.valor, 0));
+  const totalAReceber = arredondarMoeda(parcelas.filter((p) => p.status === "pendente").reduce((s, p) => s + p.valor, 0));
   const parcelasAtrasadas = parcelas.filter(parcelaAtrasada);
-  const totalDespesas = despesas.reduce((s, d) => s + d.valor, 0);
-  const margemRealizada = total - totalDespesas;
+  const totalDespesas = arredondarMoeda(despesas.reduce((s, d) => s + d.valor, 0));
+  const margemRealizada = arredondarMoeda(total - totalDespesas);
+  // Diferença entre o total do orçamento e o que já foi lançado em parcelas.
+  const faltaParcelar = arredondarMoeda(total - totalRecebido - totalAReceber);
 
   const itensDisponiveis = catalogo.filter((c) => !itensCalculados.some((i) => i.id === c.id));
   const materiaisDisponiveis = catalogoMateriais.filter((m) => !materiaisEvento.some((me) => me.ingrediente_id === m.id));
@@ -421,7 +437,7 @@ function EventoDetalhePage() {
     mutationFn: async (p: { id: string; pago: boolean }) => {
       const { error } = await supabase
         .from("parcelas")
-        .update(p.pago ? { status: "pago", data_pagamento: new Date().toISOString().slice(0, 10) } : { status: "pendente", data_pagamento: null })
+        .update(p.pago ? { status: "pago", data_pagamento: hojeISO() } : { status: "pendente", data_pagamento: null })
         .eq("id", p.id);
       if (error) throw error;
     },
@@ -451,7 +467,7 @@ function EventoDetalhePage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      setDespesa({ descricao: "", fornecedor: "", valor: 0, data: new Date().toISOString().slice(0, 10) });
+      setDespesa({ descricao: "", fornecedor: "", valor: 0, data: hojeISO() });
       invalidarTudo();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -646,7 +662,7 @@ function EventoDetalhePage() {
                       <TableCell className="font-medium">{i.nome}</TableCell>
                       <TableCell className="hidden text-muted-foreground sm:table-cell">{CATEGORIA_ITEM_CARDAPIO[i.categoria]}</TableCell>
                       <TableCell className="text-right">{formatCurrency(i.custoConvidado)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(i.custoConvidado * convidados)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(subtotalPorConvidado(i.custoConvidado, convidados))}</TableCell>
                       {editavel && (
                         <TableCell className="print:hidden">
                           <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(i.vinculoId)} disabled={removeItem.isPending}>
@@ -704,7 +720,7 @@ function EventoDetalhePage() {
                       <TableRow key={m.id}>
                         <TableCell className="font-medium">{m.ingredientes?.nome ?? "—"}</TableCell>
                         <TableCell className="text-right">{m.quantidade_por_convidado} {m.ingredientes ? UNIDADE_MEDIDA[m.ingredientes.unidade] : ""}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(m.quantidade_por_convidado * preco * convidados)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(subtotalPorConvidado(m.quantidade_por_convidado * preco, convidados))}</TableCell>
                         {editavel && (
                           <TableCell className="print:hidden">
                             <Button variant="ghost" size="icon" onClick={() => removeMaterial.mutate(m.id)} disabled={removeMaterial.isPending}>
@@ -803,7 +819,7 @@ function EventoDetalhePage() {
                 {estruturasCalculadas.map((e) => (
                   <li key={e.vinculoId} className="flex items-center gap-3 py-2.5">
                     <span className="flex-1 text-sm font-medium">{e.nome}</span>
-                    <span className="text-sm text-muted-foreground">{formatCurrency(e.custoConvidado * convidados)}</span>
+                    <span className="text-sm text-muted-foreground">{formatCurrency(subtotalPorConvidado(e.custoConvidado, convidados))}</span>
                     {editavel && (
                       <Button variant="ghost" size="icon" onClick={() => removeEstrutura.mutate(e.vinculoId)} disabled={removeEstrutura.isPending}>
                         <Trash2 className="size-4 text-destructive" />
@@ -858,7 +874,7 @@ function EventoDetalhePage() {
                       <TableCell className="font-medium">{a.descricao}</TableCell>
                       <TableCell className="hidden text-muted-foreground sm:table-cell">{TIPO_ITEM_AVULSO[a.tipo]}</TableCell>
                       <TableCell className="text-right">{formatCurrency(a.valor)}{a.tipo === "por_convidado" ? " /convidado" : ""}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(a.tipo === "por_convidado" ? a.valor * convidados : a.valor)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(subtotalAvulso(a, convidados))}</TableCell>
                       {editavel && (
                         <TableCell className="print:hidden">
                           <Button variant="ghost" size="icon" onClick={() => removeAvulso.mutate(a.id)} disabled={removeAvulso.isPending}>
@@ -1103,6 +1119,12 @@ function EventoDetalhePage() {
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Recebido</dt><dd className="text-success">{formatCurrency(totalRecebido)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">A receber</dt><dd>{formatCurrency(totalAReceber)}</dd></div>
+              {parcelas.length > 0 && faltaParcelar !== 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">{faltaParcelar > 0 ? "Falta lançar em parcelas" : "Parcelas acima do orçamento"}</dt>
+                  <dd className="text-warning-foreground">{formatCurrency(Math.abs(faltaParcelar))}</dd>
+                </div>
+              )}
               <div className="flex justify-between"><dt className="text-muted-foreground">Despesas</dt><dd className="text-destructive">{formatCurrency(totalDespesas)}</dd></div>
               <div className="flex justify-between border-t pt-2 text-base font-medium"><dt>Margem realizada</dt><dd>{formatCurrency(margemRealizada)}</dd></div>
             </dl>

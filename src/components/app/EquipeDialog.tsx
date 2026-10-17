@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { invalidarCustos } from "@/lib/invalidar";
 import type { Tables } from "@/integrations/supabase/types";
 import { calcularCustoEquipe, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ export function EquipeDialog({
   const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
 
   const { data: funcionarios = [] } = useQuery({
-    queryKey: ["funcionarios"],
+    queryKey: ["funcionarios", "opcoes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("funcionarios").select("id, nome, funcao, valor_hora").order("nome");
       if (error) throw error;
@@ -101,8 +102,7 @@ export function EquipeDialog({
       }
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["equipes"] });
-      void qc.invalidateQueries({ queryKey: ["equipe-funcionarios"] });
+      invalidarCustos(qc);
       toast.success(equipe ? "Equipe atualizada." : "Equipe cadastrada.");
       onOpenChange(false);
     },
@@ -115,7 +115,7 @@ export function EquipeDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["equipes"] });
+      invalidarCustos(qc);
       toast.success("Equipe excluída.");
       onOpenChange(false);
     },

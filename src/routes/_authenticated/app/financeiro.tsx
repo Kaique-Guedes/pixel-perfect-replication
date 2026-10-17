@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { endOfMonth, startOfMonth } from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { AlertTriangle, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, formatDate, parcelaAtrasada } from "@/lib/format";
@@ -15,8 +15,8 @@ export const Route = createFileRoute("/_authenticated/app/financeiro")({
 
 function FinanceiroPage() {
   const hoje = new Date();
-  const inicioMes = startOfMonth(hoje).toISOString().slice(0, 10);
-  const fimMes = endOfMonth(hoje).toISOString().slice(0, 10);
+  const inicioMes = format(startOfMonth(hoje), "yyyy-MM-dd");
+  const fimMes = format(endOfMonth(hoje), "yyyy-MM-dd");
 
   const { data: parcelas = [], isLoading } = useQuery({
     queryKey: ["financeiro", "parcelas"],

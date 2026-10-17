@@ -23,6 +23,7 @@ import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
 import { Route as AuthenticatedAppFinanceiroRouteImport } from './routes/_authenticated/app/financeiro'
 import { Route as AuthenticatedAppIngredientesRouteImport } from './routes/_authenticated/app/ingredientes'
+import { Route as AuthenticatedAppAgendaIndexRouteImport } from './routes/_authenticated/app/agenda.index'
 import { Route as AuthenticatedAppAgendaEventoIdRouteImport } from './routes/_authenticated/app/agenda.$eventoId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -99,6 +100,12 @@ const AuthenticatedAppIngredientesRoute =
     path: '/ingredientes',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppAgendaIndexRoute =
+  AuthenticatedAppAgendaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAppAgendaRoute,
+  } as any)
 const AuthenticatedAppAgendaEventoIdRoute =
   AuthenticatedAppAgendaEventoIdRouteImport.update({
     id: '/$eventoId',
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/app/ingredientes': typeof AuthenticatedAppIngredientesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/agenda/$eventoId': typeof AuthenticatedAppAgendaEventoIdRoute
+  '/app/agenda/': typeof AuthenticatedAppAgendaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -128,7 +136,6 @@ export interface FileRoutesByTo {
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
-  '/app/agenda': typeof AuthenticatedAppAgendaRouteWithChildren
   '/app/cardapio': typeof AuthenticatedAppCardapioRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/app/ingredientes': typeof AuthenticatedAppIngredientesRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/agenda/$eventoId': typeof AuthenticatedAppAgendaEventoIdRoute
+  '/app/agenda': typeof AuthenticatedAppAgendaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authenticated/app/ingredientes': typeof AuthenticatedAppIngredientesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/agenda/$eventoId': typeof AuthenticatedAppAgendaEventoIdRoute
+  '/_authenticated/app/agenda/': typeof AuthenticatedAppAgendaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/app/ingredientes'
     | '/app/'
     | '/app/agenda/$eventoId'
+    | '/app/agenda/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,7 +189,6 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/redefinir-senha'
     | '/onboarding'
-    | '/app/agenda'
     | '/app/cardapio'
     | '/app/clientes'
     | '/app/configuracoes'
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/app/ingredientes'
     | '/app'
     | '/app/agenda/$eventoId'
+    | '/app/agenda'
   id:
     | '__root__'
     | '/'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/ingredientes'
     | '/_authenticated/app/'
     | '/_authenticated/app/agenda/$eventoId'
+    | '/_authenticated/app/agenda/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -314,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIngredientesRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/agenda/': {
+      id: '/_authenticated/app/agenda/'
+      path: '/'
+      fullPath: '/app/agenda/'
+      preLoaderRoute: typeof AuthenticatedAppAgendaIndexRouteImport
+      parentRoute: typeof AuthenticatedAppAgendaRoute
+    }
     '/_authenticated/app/agenda/$eventoId': {
       id: '/_authenticated/app/agenda/$eventoId'
       path: '/$eventoId'
@@ -326,11 +344,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppAgendaRouteChildren {
   AuthenticatedAppAgendaEventoIdRoute: typeof AuthenticatedAppAgendaEventoIdRoute
+  AuthenticatedAppAgendaIndexRoute: typeof AuthenticatedAppAgendaIndexRoute
 }
 
 const AuthenticatedAppAgendaRouteChildren: AuthenticatedAppAgendaRouteChildren =
   {
     AuthenticatedAppAgendaEventoIdRoute: AuthenticatedAppAgendaEventoIdRoute,
+    AuthenticatedAppAgendaIndexRoute: AuthenticatedAppAgendaIndexRoute,
   }
 
 const AuthenticatedAppAgendaRouteWithChildren =

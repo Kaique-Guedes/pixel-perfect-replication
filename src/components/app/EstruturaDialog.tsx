@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { invalidarCustos } from "@/lib/invalidar";
 import type { Tables } from "@/integrations/supabase/types";
 import { UNIDADE_MEDIDA, calcularCustoEstrutura, formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -101,8 +102,7 @@ export function EstruturaDialog({
       }
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["estruturas"] });
-      void qc.invalidateQueries({ queryKey: ["estrutura-materiais"] });
+      invalidarCustos(qc);
       toast.success(estrutura ? "Estrutura atualizada." : "Estrutura cadastrada.");
       onOpenChange(false);
     },
@@ -115,7 +115,7 @@ export function EstruturaDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["estruturas"] });
+      invalidarCustos(qc);
       toast.success("Estrutura excluída.");
       onOpenChange(false);
     },
