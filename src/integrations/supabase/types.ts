@@ -970,7 +970,14 @@ export type Database = {
       tipo_insumo: "ingrediente" | "material"
       tipo_item_avulso: "fixo" | "por_convidado"
       tipo_negocio: "buffet" | "casa_de_festas" | "cerimonial" | "produtora"
-      unidade_medida: "kg" | "g" | "litro" | "ml" | "unidade"
+      unidade_medida:
+        | "kg"
+        | "g"
+        | "litro"
+        | "ml"
+        | "unidade"
+        | "duzia"
+        | "cento"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1129,7 +1136,7 @@ export const Constants = {
       tipo_insumo: ["ingrediente", "material"],
       tipo_item_avulso: ["fixo", "por_convidado"],
       tipo_negocio: ["buffet", "casa_de_festas", "cerimonial", "produtora"],
-      unidade_medida: ["kg", "g", "litro", "ml", "unidade"],
+      unidade_medida: ["kg", "g", "litro", "ml", "unidade", "duzia", "cento"],
     },
   },
 } as const
