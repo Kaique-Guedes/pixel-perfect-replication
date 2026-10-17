@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { CATEGORIA_INGREDIENTE, UNIDADE_MEDIDA, formatCurrency } from "@/lib/format";
+import { CATEGORIA_INGREDIENTE, UNIDADE_MEDIDA, formatCurrency, formatQuantidade } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
 import { IngredienteDialog } from "@/components/app/IngredienteDialog";
 import { FuncionarioDialog } from "@/components/app/FuncionarioDialog";
@@ -157,7 +157,7 @@ function TabelaInsumos({ tipo, insumos, isLoading }: { tipo: Enums<"tipo_insumo"
                   <TableCell className="text-right">
                     <span className={i.estoque_atual <= 0 ? "inline-flex items-center gap-1 text-destructive" : ""}>
                       {i.estoque_atual <= 0 && <AlertTriangle className="size-3.5" />}
-                      {i.estoque_atual} {UNIDADE_MEDIDA[i.unidade]}
+                      {formatQuantidade(i.estoque_atual)} {UNIDADE_MEDIDA[i.unidade]}
                     </span>
                   </TableCell>
                 </TableRow>

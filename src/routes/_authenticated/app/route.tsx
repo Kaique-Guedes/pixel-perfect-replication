@@ -18,8 +18,19 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+
+/** No celular o menu abre por cima da tela: fecha sozinho ao trocar de página. */
+function FecharMenuAoNavegar() {
+  const { pathname } = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [pathname, isMobile, setOpenMobile]);
+  return null;
+}
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: AppLayout,
@@ -62,6 +73,7 @@ function AppLayout() {
 
   return (
     <SidebarProvider>
+      <FecharMenuAoNavegar />
       <Sidebar collapsible="icon" className="print:hidden">
         <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-1">
           <Logo size="sm" variant="sidebar" />

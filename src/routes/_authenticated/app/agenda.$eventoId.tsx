@@ -17,6 +17,7 @@ import {
   calcularResumoOrcamento,
   arredondarMoeda,
   formatCurrency,
+  formatQuantidade,
   formatDate,
   formatHora,
   hojeISO,
@@ -719,7 +720,7 @@ function EventoDetalhePage() {
                     return (
                       <TableRow key={m.id}>
                         <TableCell className="font-medium">{m.ingredientes?.nome ?? "—"}</TableCell>
-                        <TableCell className="text-right">{m.quantidade_por_convidado} {m.ingredientes ? UNIDADE_MEDIDA[m.ingredientes.unidade] : ""}</TableCell>
+                        <TableCell className="text-right">{formatQuantidade(m.quantidade_por_convidado)} {m.ingredientes ? UNIDADE_MEDIDA[m.ingredientes.unidade] : ""}</TableCell>
                         <TableCell className="text-right">{formatCurrency(subtotalPorConvidado(m.quantidade_por_convidado * preco, convidados))}</TableCell>
                         {editavel && (
                           <TableCell className="print:hidden">

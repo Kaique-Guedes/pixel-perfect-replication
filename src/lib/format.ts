@@ -12,6 +12,9 @@ export const arredondarMoeda = (v: number) => Math.round((v + Number.EPSILON) * 
 export const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+/** Quantidade no padrão brasileiro (vírgula decimal): 0.5 → "0,5". */
+export const formatQuantidade = (v: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 }).format(v);
+
 export const formatDate = (d: string | Date, pattern = "dd/MM/yyyy") =>
   format(typeof d === "string" ? parseISO(d) : d, pattern, { locale: ptBR });
 
