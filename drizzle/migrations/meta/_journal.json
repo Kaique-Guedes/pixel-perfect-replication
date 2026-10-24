@@ -120,6 +120,13 @@
       "when": 1792267733534,
       "tag": "0016_unidade_duzia_cento",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792267793534,
+      "tag": "0017_rendimento_receita",
+      "breakpoints": true
     }
   ]
 }

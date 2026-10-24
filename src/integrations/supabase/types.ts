@@ -271,18 +271,21 @@ export type Database = {
           empresa_id: string
           id: string
           nome: string
+          rendimento: number
         }
         Insert: {
           created_at?: string
           empresa_id: string
           id?: string
           nome: string
+          rendimento?: number
         }
         Update: {
           created_at?: string
           empresa_id?: string
           id?: string
           nome?: string
+          rendimento?: number
         }
         Relationships: [
           {
@@ -686,6 +689,7 @@ export type Database = {
           foto_url: string | null
           id: string
           nome: string
+          rendimento: number
           updated_at: string
         }
         Insert: {
@@ -695,6 +699,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           nome: string
+          rendimento?: number
           updated_at?: string
         }
         Update: {
@@ -704,6 +709,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           nome?: string
+          rendimento?: number
           updated_at?: string
         }
         Relationships: [

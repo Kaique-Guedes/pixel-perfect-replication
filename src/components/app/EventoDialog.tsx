@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { AlertTriangle, Receipt, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 import { EVENTO_STATUS, STATUS_BLOQUEIA_AGENDA, CATEGORIA_ITEM_CARDAPIO, calcularCustoEquipe, calcularCustoEstrutura, calcularCustoItemCardapio, calcularResumoOrcamento, formatCurrency } from "@/lib/format";
+import { ItemCardapioDialog } from "@/components/app/ItemCardapioDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,8 @@ export function EventoDialog({
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [equipesSelecionadas, setEquipesSelecionadas] = useState<string[]>([]);
   const [estruturasSelecionadas, setEstruturasSelecionadas] = useState<string[]>([]);
+  // Prato aberto para criar (null) ou editar sem sair do evento; undefined = fechado.
+  const [pratoEmEdicao, setPratoEmEdicao] = useState<{ id: string; nome: string; categoria: Enums<"categoria_item_cardapio">; rendimento: number } | null | undefined>(undefined);
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", "options"],
@@ -65,7 +68,7 @@ export function EventoDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("itens_cardapio")
-        .select("id, nome, categoria, itens_cardapio_ingredientes(quantidade_por_convidado, ingredientes(preco_unidade))")
+        .select("id, nome, categoria, rendimento, itens_cardapio_ingredientes(quantidade_por_convidado, ingredientes(preco_unidade))")
         .order("nome");
       if (error) throw error;
       return data;
@@ -104,7 +107,7 @@ export function EventoDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("estruturas")
-        .select("id, nome, estruturas_materiais(quantidade_por_convidado, ingredientes(preco_unidade))")
+        .select("id, nome, rendimento, estruturas_materiais(quantidade_por_convidado, ingredientes(preco_unidade))")
         .order("nome");
       if (error) throw error;
       return data;
@@ -320,7 +323,7 @@ export function EventoDialog({
     () =>
       catalogo.map((c) => ({
         ...c,
-        custoConvidado: calcularCustoItemCardapio(c.itens_cardapio_ingredientes).custoConvidado,
+        custoConvidado: calcularCustoItemCardapio(c.itens_cardapio_ingredientes, c.rendimento).custoConvidado,
       })),
     [catalogo],
   );
@@ -331,7 +334,7 @@ export function EventoDialog({
   );
 
   const estruturasCalculadas = useMemo(
-    () => estruturasCatalogo.map((e) => ({ ...e, custoConvidado: calcularCustoEstrutura(e.estruturas_materiais) })),
+    () => estruturasCatalogo.map((e) => ({ ...e, custoConvidado: calcularCustoEstrutura(e.estruturas_materiais, e.rendimento) })),
     [estruturasCatalogo],
   );
 
@@ -443,20 +446,39 @@ export function EventoDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Cardápio do orçamento</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Pratos deste evento</Label>
+              <Button type="button" variant="outline" size="sm" onClick={() => setPratoEmEdicao(null)}>
+                <Plus /> Novo prato
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A lista abaixo é o cardápio do buffet, compartilhado entre todos os eventos — nada vem de outro cliente. Marque só os pratos deste evento; o lápis edita a receita do prato.
+            </p>
             {catalogoCalculado.length === 0 ? (
               <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
-                Nenhum item de cardápio cadastrado ainda. Cadastre em "Cardápio" para poder montar o orçamento aqui — ou salve o evento e monte depois na tela dele.
+                Nenhum prato cadastrado ainda. Clique em "Novo prato" para montar a receita a partir dos ingredientes cadastrados.
               </p>
             ) : (
               <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border p-2">
                 {catalogoCalculado.map((c) => (
-                  <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded-md p-1.5 hover:bg-accent/50">
-                    <Checkbox checked={selecionados.includes(c.id)} onCheckedChange={() => toggleItem(c.id)} />
-                    <span className="flex-1 text-sm">{c.nome}</span>
-                    <span className="text-xs text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[c.categoria]}</span>
-                    <span className="text-sm text-muted-foreground">{formatCurrency(c.custoConvidado)}/convidado (custo)</span>
-                  </label>
+                  <div key={c.id} className="flex items-center gap-1 rounded-md hover:bg-accent/50">
+                    <label className="flex flex-1 cursor-pointer flex-wrap items-center gap-2 p-1.5">
+                      <Checkbox checked={selecionados.includes(c.id)} onCheckedChange={() => toggleItem(c.id)} />
+                      <span className="flex-1 text-sm">{c.nome}</span>
+                      <span className="text-xs text-muted-foreground">{CATEGORIA_ITEM_CARDAPIO[c.categoria]}</span>
+                      <span className="text-sm text-muted-foreground">{formatCurrency(c.custoConvidado)}/convidado (custo)</span>
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Editar receita do prato"
+                      onClick={() => setPratoEmEdicao({ id: c.id, nome: c.nome, categoria: c.categoria, rendimento: c.rendimento })}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}
@@ -547,6 +569,12 @@ export function EventoDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      <ItemCardapioDialog
+        open={pratoEmEdicao !== undefined}
+        onOpenChange={(o) => { if (!o) setPratoEmEdicao(undefined); }}
+        item={pratoEmEdicao ?? null}
+        onSaved={(id) => setSelecionados((atual) => (atual.includes(id) ? atual : [...atual, id]))}
+      />
     </Dialog>
   );
 }

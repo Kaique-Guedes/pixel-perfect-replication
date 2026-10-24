@@ -139,7 +139,7 @@ function AbaPratos() {
             </TableHeader>
             <TableBody>
               {filtrados.map((i) => {
-                const { custoConvidado } = calcularCustoItemCardapio(i.itens_cardapio_ingredientes);
+                const { custoConvidado } = calcularCustoItemCardapio(i.itens_cardapio_ingredientes, i.rendimento);
                 return (
                   <TableRow key={i.id} className="cursor-pointer" onClick={() => abrirEdicao(i)}>
                     <TableCell className="font-medium">{i.nome}</TableCell>
@@ -315,7 +315,7 @@ function AbaEstruturas() {
             </TableHeader>
             <TableBody>
               {filtrados.map((e) => {
-                const custo = calcularCustoEstrutura(e.estruturas_materiais);
+                const custo = calcularCustoEstrutura(e.estruturas_materiais, e.rendimento);
                 return (
                   <TableRow key={e.id} className="cursor-pointer" onClick={() => abrirEdicao(e)}>
                     <TableCell className="font-medium">{e.nome}</TableCell>

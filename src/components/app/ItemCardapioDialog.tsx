@@ -6,14 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { invalidarCustos } from "@/lib/invalidar";
 import type { Enums, Tables } from "@/integrations/supabase/types";
-import { CATEGORIA_ITEM_CARDAPIO, UNIDADE_MEDIDA, calcularCustoItemCardapio, formatCurrency } from "@/lib/format";
+import { CATEGORIA_ITEM_CARDAPIO, UNIDADE_MEDIDA, calcularCustoItemCardapio, formatCurrency, rendimentoValido } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type ItemCardapio = Tables<"itens_cardapio">;
+type ItemCardapio = Pick<Tables<"itens_cardapio">, "id" | "nome" | "categoria"> & { rendimento?: number | null };
 type FichaLinha = { key: string; ingrediente_id: string; quantidade_por_convidado: number };
 
 let seq = 0;
@@ -23,16 +23,20 @@ export function ItemCardapioDialog({
   open,
   onOpenChange,
   item,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   item?: ItemCardapio | null;
+  /** Chamado com o id do prato depois de salvar (ex.: já marcar o prato novo no evento). */
+  onSaved?: (id: string) => void;
 }) {
   const { empresa } = useAuth();
   const qc = useQueryClient();
   const [nome, setNome] = useState("");
   const [categoria, setCategoria] = useState<Enums<"categoria_item_cardapio">>("prato_principal");
   const [linhas, setLinhas] = useState<FichaLinha[]>([novaLinha()]);
+  const [rendimento, setRendimento] = useState(1);
 
   const { data: ingredientes = [] } = useQuery({
     queryKey: ["ingredientes", "ficha"],
@@ -62,6 +66,7 @@ export function ItemCardapioDialog({
     if (item) {
       setNome(item.nome);
       setCategoria(item.categoria);
+      setRendimento(rendimentoValido(item.rendimento));
       setLinhas(
         fichaAtual && fichaAtual.length > 0
           ? fichaAtual.map((f) => ({ key: `${f.ingrediente_id}-${Math.random()}`, ingrediente_id: f.ingrediente_id, quantidade_por_convidado: f.quantidade_por_convidado }))
@@ -70,6 +75,7 @@ export function ItemCardapioDialog({
     } else {
       setNome("");
       setCategoria("prato_principal");
+      setRendimento(1);
       setLinhas([novaLinha()]);
     }
   }, [open, item, fichaAtual]);
@@ -80,11 +86,11 @@ export function ItemCardapioDialog({
       quantidade_por_convidado: l.quantidade_por_convidado,
       ingredientes: ingredientes.find((i) => i.id === l.ingrediente_id) ?? null,
     }));
-  const { custoConvidado } = calcularCustoItemCardapio(ficha);
+  const { custoReceita, custoConvidado } = calcularCustoItemCardapio(ficha, rendimento);
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { empresa_id: empresa!.id, nome: nome.trim(), categoria };
+      const payload = { empresa_id: empresa!.id, nome: nome.trim(), categoria, rendimento: rendimentoValido(Math.round(rendimento)) };
       const { data: savedItem, error } = item
         ? await supabase.from("itens_cardapio").update(payload).eq("id", item.id).select().single()
         : await supabase.from("itens_cardapio").insert(payload).select().single();
@@ -106,9 +112,11 @@ export function ItemCardapioDialog({
         );
         if (insError) throw insError;
       }
+      return itemId;
     },
-    onSuccess: () => {
+    onSuccess: (itemId) => {
       invalidarCustos(qc);
+      onSaved?.(itemId);
       toast.success(item ? "Item de cardápio atualizado." : "Item de cardápio cadastrado.");
       onOpenChange(false);
     },
@@ -147,7 +155,7 @@ export function ItemCardapioDialog({
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{item ? "Editar item de cardápio" : "Novo item de cardápio"}</DialogTitle>
-            <DialogDescription>O custo por convidado é calculado automaticamente pela ficha técnica.</DialogDescription>
+            <DialogDescription>Este prato fica no seu cardápio e pode ser usado em qualquer evento. Mudanças aqui valem para todos os orçamentos ainda abertos.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
@@ -168,9 +176,25 @@ export function ItemCardapioDialog({
             </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+            <Label htmlFor="ic-rendimento" className="flex-1 text-sm">
+              Esta receita serve quantos convidados?
+              <span className="block text-xs font-normal text-muted-foreground">Use 1 se as quantidades abaixo já forem por convidado.</span>
+            </Label>
+            <Input
+              id="ic-rendimento"
+              type="number"
+              min={1}
+              step="1"
+              className="w-24 text-right"
+              value={rendimento}
+              onChange={(e) => setRendimento(Number(e.target.value))}
+            />
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Ficha técnica (ingredientes por convidado)</Label>
+              <Label>Ficha técnica (quantidades da receita)</Label>
               <Button type="button" variant="outline" size="sm" onClick={() => setLinhas([...linhas, novaLinha()])}>
                 <Plus /> Ingrediente
               </Button>
@@ -219,6 +243,7 @@ export function ItemCardapioDialog({
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-accent/50 p-4">
             <div className="text-sm">
+              <p className="text-muted-foreground">Custo da receita: <span className="font-medium text-foreground">{formatCurrency(custoReceita)}</span>{rendimentoValido(rendimento) > 1 && <> · serve {rendimentoValido(rendimento)} convidados</>}</p>
               <p className="text-muted-foreground">Custo por convidado: <span className="font-medium text-foreground">{formatCurrency(custoConvidado)}</span></p>
             </div>
           </div>

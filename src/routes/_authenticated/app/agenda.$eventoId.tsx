@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, AlertTriangle, FileDown, Lock, Plus, Trash2, Unlock } from "lucide-react";
+import { ArrowLeft, AlertTriangle, FileDown, Lock, Pencil, Plus, Trash2, Unlock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Enums } from "@/integrations/supabase/types";
@@ -28,6 +28,7 @@ import {
 import { PageHeader } from "@/components/app/PageHeader";
 import { EventoStatusBadge, badge } from "@/components/app/StatusBadge";
 import { MargemBadge } from "@/components/app/MargemBadge";
+import { ItemCardapioDialog } from "@/components/app/ItemCardapioDialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ function EventoDetalhePage() {
   const [parcela, setParcela] = useState({ descricao: "", valor: 0, data_vencimento: "" });
   const [despesa, setDespesa] = useState({ descricao: "", fornecedor: "", valor: 0, data: hojeISO() });
   const [margemLucro, setMargemLucro] = useState(30);
+  const [pratoEmEdicao, setPratoEmEdicao] = useState<{ id: string; nome: string; categoria: Enums<"categoria_item_cardapio">; rendimento: number } | null>(null);
 
   const { data: evento, isLoading: carregandoEvento } = useQuery({
     queryKey: ["eventos", eventoId],
@@ -72,7 +74,7 @@ function EventoDetalhePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("evento_cardapio_itens")
-        .select("id, item_cardapio_id, itens_cardapio(id, nome, categoria, itens_cardapio_ingredientes(quantidade_por_convidado, ingredientes(preco_unidade)))")
+        .select("id, item_cardapio_id, itens_cardapio(id, nome, categoria, rendimento, itens_cardapio_ingredientes(quantidade_por_convidado, ingredientes(preco_unidade)))")
         .eq("evento_id", eventoId);
       if (error) throw error;
       return data;
@@ -148,7 +150,7 @@ function EventoDetalhePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("evento_estruturas")
-        .select("id, estrutura_id, estruturas(nome, estruturas_materiais(quantidade_por_convidado, ingredientes(nome, preco_unidade)))")
+        .select("id, estrutura_id, estruturas(nome, rendimento, estruturas_materiais(quantidade_por_convidado, ingredientes(nome, preco_unidade)))")
         .eq("evento_id", eventoId);
       if (error) throw error;
       return data;
@@ -195,8 +197,8 @@ function EventoDetalhePage() {
         .filter((ie) => ie.itens_cardapio)
         .map((ie) => {
           const item = ie.itens_cardapio!;
-          const { custoConvidado } = calcularCustoItemCardapio(item.itens_cardapio_ingredientes);
-          return { vinculoId: ie.id, id: item.id, nome: item.nome, categoria: item.categoria, custoConvidado };
+          const { custoConvidado } = calcularCustoItemCardapio(item.itens_cardapio_ingredientes, item.rendimento);
+          return { vinculoId: ie.id, id: item.id, nome: item.nome, categoria: item.categoria, rendimento: item.rendimento, custoConvidado };
         }),
     [itensEvento],
   );
@@ -206,7 +208,7 @@ function EventoDetalhePage() {
     [equipesEvento],
   );
   const estruturasCalculadas = useMemo(
-    () => estruturasEvento.filter((e) => e.estruturas).map((e) => ({ vinculoId: e.id, id: e.estrutura_id, nome: e.estruturas!.nome, custoConvidado: calcularCustoEstrutura(e.estruturas!.estruturas_materiais) })),
+    () => estruturasEvento.filter((e) => e.estruturas).map((e) => ({ vinculoId: e.id, id: e.estrutura_id, nome: e.estruturas!.nome, custoConvidado: calcularCustoEstrutura(e.estruturas!.estruturas_materiais, e.estruturas!.rendimento) })),
     [estruturasEvento],
   );
   const {
@@ -665,7 +667,10 @@ function EventoDetalhePage() {
                       <TableCell className="text-right">{formatCurrency(i.custoConvidado)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(subtotalPorConvidado(i.custoConvidado, convidados))}</TableCell>
                       {editavel && (
-                        <TableCell className="print:hidden">
+                        <TableCell className="whitespace-nowrap print:hidden">
+                          <Button variant="ghost" size="icon" title="Editar receita do prato" onClick={() => setPratoEmEdicao({ id: i.id, nome: i.nome, categoria: i.categoria, rendimento: i.rendimento })}>
+                            <Pencil className="size-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => removeItem.mutate(i.vinculoId)} disabled={removeItem.isPending}>
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
@@ -1138,6 +1143,7 @@ function EventoDetalhePage() {
           </section>
         </div>
       </div>
+      <ItemCardapioDialog open={!!pratoEmEdicao} onOpenChange={(o) => { if (!o) setPratoEmEdicao(null); }} item={pratoEmEdicao} />
     </>
   );
 }

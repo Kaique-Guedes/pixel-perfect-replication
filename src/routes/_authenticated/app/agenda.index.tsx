@@ -48,6 +48,10 @@ function AgendaPage() {
     [eventos, selecionado],
   );
 
+  // Objeto estável: um objeto novo a cada render fazia o formulário do
+  // evento se reiniciar (e perder o que estava sendo digitado).
+  const defaultsNovoEvento = useMemo(() => ({ data: format(selecionado, "yyyy-MM-dd") }), [selecionado]);
+
   const abrirNovo = () => {
     setEventoAtivo(null);
     setDialogOpen(true);
@@ -140,7 +144,7 @@ function AgendaPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         evento={eventoAtivo}
-        defaults={{ data: format(selecionado, "yyyy-MM-dd") }}
+        defaults={defaultsNovoEvento}
       />
     </>
   );

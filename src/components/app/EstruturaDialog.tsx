@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { invalidarCustos } from "@/lib/invalidar";
 import type { Tables } from "@/integrations/supabase/types";
-import { UNIDADE_MEDIDA, calcularCustoEstrutura, formatCurrency } from "@/lib/format";
+import { UNIDADE_MEDIDA, calcularCustoEstrutura, formatCurrency, rendimentoValido } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,7 @@ export function EstruturaDialog({
   const qc = useQueryClient();
   const [nome, setNome] = useState("");
   const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
+  const [rendimento, setRendimento] = useState(1);
 
   const { data: materiais = [] } = useQuery({
     queryKey: ["materiais"],
@@ -60,6 +61,7 @@ export function EstruturaDialog({
     if (!open) return;
     if (estrutura) {
       setNome(estrutura.nome);
+      setRendimento(rendimentoValido(estrutura.rendimento));
       setLinhas(
         composicaoAtual && composicaoAtual.length > 0
           ? composicaoAtual.map((c) => ({ key: `${c.ingrediente_id}-${Math.random()}`, ingrediente_id: c.ingrediente_id, quantidade_por_convidado: c.quantidade_por_convidado }))
@@ -67,6 +69,7 @@ export function EstruturaDialog({
       );
     } else {
       setNome("");
+      setRendimento(1);
       setLinhas([novaLinha()]);
     }
   }, [open, estrutura, composicaoAtual]);
@@ -74,11 +77,12 @@ export function EstruturaDialog({
   const composicao = linhas
     .filter((l) => l.ingrediente_id)
     .map((l) => ({ quantidade_por_convidado: l.quantidade_por_convidado, ingredientes: materiais.find((m) => m.id === l.ingrediente_id) ?? null }));
-  const custoPorConvidado = calcularCustoEstrutura(composicao);
+  const custoTotal = calcularCustoEstrutura(composicao);
+  const custoPorConvidado = calcularCustoEstrutura(composicao, rendimento);
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { empresa_id: empresa!.id, nome: nome.trim() };
+      const payload = { empresa_id: empresa!.id, nome: nome.trim(), rendimento: rendimentoValido(Math.round(rendimento)) };
       const { data: salva, error } = estrutura
         ? await supabase.from("estruturas").update(payload).eq("id", estrutura.id).select().single()
         : await supabase.from("estruturas").insert(payload).select().single();
@@ -138,12 +142,28 @@ export function EstruturaDialog({
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{estrutura ? "Editar estrutura" : "Nova estrutura"}</DialogTitle>
-            <DialogDescription>Ex.: "Estrutura padrão". Quantidade é por convidado (ex.: 1 cadeira por convidado) — o custo escala com o nº de convidados do evento.</DialogDescription>
+            <DialogDescription>Ex.: "Estrutura padrão". Informe os materiais e para quantos convidados eles servem — o custo escala com o nº de convidados do evento.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
             <Label htmlFor="es-nome">Nome da estrutura</Label>
             <Input id="es-nome" required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Estrutura padrão" />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+            <Label htmlFor="es-rendimento" className="flex-1 text-sm">
+              Estes materiais atendem quantos convidados?
+              <span className="block text-xs font-normal text-muted-foreground">Ex.: 40 cadeiras e 5 mesas atendem 40 convidados. Use 1 se as quantidades já forem por convidado.</span>
+            </Label>
+            <Input
+              id="es-rendimento"
+              type="number"
+              min={1}
+              step="1"
+              className="w-24 text-right"
+              value={rendimento}
+              onChange={(e) => setRendimento(Number(e.target.value))}
+            />
           </div>
 
           <div className="space-y-2">
@@ -185,7 +205,7 @@ export function EstruturaDialog({
                         setLinhas(next);
                       }}
                     />
-                    <span className="w-24 shrink-0 text-xs text-muted-foreground">{mat ? `${UNIDADE_MEDIDA[mat.unidade]}/convidado` : ""}</span>
+                    <span className="w-24 shrink-0 text-xs text-muted-foreground">{mat ? (rendimentoValido(rendimento) > 1 ? UNIDADE_MEDIDA[mat.unidade] : `${UNIDADE_MEDIDA[mat.unidade]}/convidado`) : ""}</span>
                     <Button type="button" variant="ghost" size="icon" onClick={() => setLinhas(linhas.filter((l) => l.key !== linha.key))}>
                       <X className="size-4" />
                     </Button>
@@ -195,9 +215,17 @@ export function EstruturaDialog({
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-accent/50 p-4 text-sm">
-            <span className="text-muted-foreground">Custo por convidado</span>
-            <span className="font-medium text-foreground">{formatCurrency(custoPorConvidado)}</span>
+          <div className="space-y-1 rounded-lg bg-accent/50 p-4 text-sm">
+            {rendimentoValido(rendimento) > 1 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Custo dos materiais (para {rendimentoValido(rendimento)} convidados)</span>
+                <span className="text-foreground">{formatCurrency(custoTotal)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Custo por convidado</span>
+              <span className="font-medium text-foreground">{formatCurrency(custoPorConvidado)}</span>
+            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:justify-between">

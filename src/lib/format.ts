@@ -90,22 +90,29 @@ export const CATEGORIA_ITEM_CARDAPIO: Record<Enums<"categoria_item_cardapio">, s
 };
 
 /**
- * Custo por convidado de um item de cardápio, a partir da ficha
- * técnica (ingrediente × quantidade por convidado). Recalculado no
- * cliente sempre que a ficha técnica ou o preço de um ingrediente
- * mudam — nunca fica armazenado no banco (evita ficar desatualizado).
- * Não inclui margem: a margem de lucro é definida por evento (ver
- * calcularValorComMargem), não mais por item de cardápio.
+ * Custo de um item de cardápio a partir da ficha técnica.
+ *
+ * A ficha guarda as quantidades da RECEITA e o item diz quantos
+ * convidados ela serve (rendimento). Custo por convidado = custo da
+ * receita / rendimento. Rendimento 1 = quantidades já por convidado
+ * (como eram os pratos antigos).
+ *
+ * Recalculado no cliente sempre que a ficha ou um preço muda — nunca
+ * fica armazenado no banco. Não inclui margem (ela é por evento).
  */
 export function calcularCustoItemCardapio(
   ficha: { quantidade_por_convidado: number; ingredientes: { preco_unidade: number } | null }[],
+  rendimento = 1,
 ) {
-  const custoConvidado = ficha.reduce(
+  const custoReceita = ficha.reduce(
     (soma, f) => soma + f.quantidade_por_convidado * (f.ingredientes?.preco_unidade ?? 0),
     0,
   );
-  return { custoConvidado };
+  return { custoReceita, custoConvidado: custoReceita / rendimentoValido(rendimento) };
 }
+
+/** Rendimento inválido (0, vazio, negativo) conta como 1 para não dividir por zero. */
+export const rendimentoValido = (r: number | null | undefined) => (r && r > 0 ? r : 1);
 
 /** Aplica a margem de lucro (%) do evento sobre um valor de custo. */
 export function calcularValorComMargem(custo: number, margemLucroPct: number) {
@@ -117,9 +124,16 @@ export function calcularCustoEquipe(linhas: { horas: number; funcionarios: { val
   return linhas.reduce((soma, l) => soma + l.horas * (l.funcionarios?.valor_hora ?? 0), 0);
 }
 
-/** Custo por convidado de uma estrutura: soma de quantidade por convidado × preço unitário de cada material. */
-export function calcularCustoEstrutura(linhas: { quantidade_por_convidado: number; ingredientes: { preco_unidade: number } | null }[]) {
-  return linhas.reduce((soma, l) => soma + l.quantidade_por_convidado * (l.ingredientes?.preco_unidade ?? 0), 0);
+/**
+ * Custo por convidado de uma estrutura: (soma de quantidade × preço de
+ * cada material) / quantos convidados ela atende (rendimento).
+ */
+export function calcularCustoEstrutura(
+  linhas: { quantidade_por_convidado: number; ingredientes: { preco_unidade: number } | null }[],
+  rendimento = 1,
+) {
+  const total = linhas.reduce((soma, l) => soma + l.quantidade_por_convidado * (l.ingredientes?.preco_unidade ?? 0), 0);
+  return total / rendimentoValido(rendimento);
 }
 
 /** Subtotal (já em centavos) de algo cobrado por convidado. */
